@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Meal Plan</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --bg:#FFF3E1;
@@ -54,8 +55,9 @@
   .iconbtn:active{transform:scale(.94);}
 
   /* Stamp-style plan button */
+  .plan-row{display:flex;gap:10px;align-items:stretch;margin:6px 0 20px;}
   .stamp-btn{
-    display:block;width:100%;text-align:center;
+    display:block;flex:1;text-align:center;
     background:var(--brick);color:#FBF4E6;
     border:2px solid #E7C79A;
     border-radius:10px;
@@ -64,11 +66,18 @@
     font-size:19px;font-weight:700;letter-spacing:.02em;
     box-shadow:var(--shadow);
     transform:rotate(-0.6deg);
-    margin:6px 0 20px;
+    margin:0;
     position:relative;
   }
   .stamp-btn:active{transform:rotate(-0.6deg) scale(.98);}
   .stamp-btn .sub{display:block;font-family:var(--font-body);font-weight:400;font-size:11.5px;opacity:.85;margin-top:2px;letter-spacing:.02em;}
+  .dl-btn{
+    flex:none;width:56px;
+    background:var(--bg-elevated);border:2px solid var(--board-line);border-radius:10px;
+    display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--ink);
+    box-shadow:var(--shadow);
+  }
+  .dl-btn:active{transform:scale(.95);}
 
   /* Week nav */
   .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
@@ -190,12 +199,12 @@
   .target-stepper{display:flex;align-items:center;gap:6px;flex:none;}
   .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);font-size:15px;line-height:1;}
   .target-stepper .tval{width:38px;text-align:center;font-size:13px;color:var(--ink-soft);}
-  .recipe-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--paper-line);font-size:13.5px;}
-  .recipe-row .rinfo{flex:1;}
+  .recipe-row{padding:8px 0;border-top:1px dashed var(--paper-line);font-size:13.5px;}
+  .recipe-row .rinfo{margin-bottom:6px;}
   .recipe-row .rinfo .rn{color:var(--ink);}
   .recipe-row .rinfo .rmeta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
-  .recipe-row .rm{width:74px;flex:none;}
-  .recipe-row .rm select{width:100%;border:1px solid var(--paper-line);border-radius:6px;padding:4px;font-size:12px;background:#fff;color:var(--ink);}
+  .recipe-row .ractions{display:flex;align-items:center;gap:6px;}
+  .recipe-row .ractions select{flex:1;min-width:0;border:1px solid var(--paper-line);border-radius:6px;padding:4px;font-size:12px;background:#fff;color:var(--ink);}
   .add-recipe-form{display:flex;gap:6px;margin-top:10px;}
   .add-recipe-form input[type=text]{flex:1;padding:8px 10px;border-radius:7px;border:1px solid var(--paper-line);font-size:13.5px;}
   .add-recipe-form select{border-radius:7px;border:1px solid var(--paper-line);font-size:12.5px;padding:0 4px;}
@@ -259,7 +268,7 @@ function toast(msg){
 }
 
 /* ---------- week data access ---------- */
-function emptySlot(){ return {status:'empty', recipeId:null}; }
+function emptySlot(){ return {status:'empty', recipeId:null, recipeName:null, categoryName:null}; }
 function ensureWeek(startISO){
   if(!state.weeks[startISO]){
     state.weeks[startISO] = {
@@ -321,9 +330,12 @@ function renderHome(){
       </div>
       <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
     </div>
-    <button class="stamp-btn" onclick="openWizard()">Plan meals
-      <span class="sub">start day, days you're out, freezer, new recipes</span>
-    </button>
+    <div class="plan-row">
+      <button class="stamp-btn" onclick="openWizard()">Plan meals
+        <span class="sub">start day, days you're out, freezer, new recipes</span>
+      </button>
+      <button class="dl-btn" onclick="downloadWeekPdf()" aria-label="Download this week as PDF" title="Download this week as PDF">⬇</button>
+    </div>
     <div class="weeknav">
       <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
       <div class="range">${firstLabel} – ${lastLabel}<small>swipe to change week</small></div>
@@ -340,10 +352,10 @@ function renderMealRow(date, meal, slot){
   let inner;
   if(slot.status==='out'){
     inner = `<div class="slot out">Out — no meal needed</div>`;
-  } else if(slot.status==='planned' && slot.recipeId && getRecipe(slot.recipeId)){
-    const r = getRecipe(slot.recipeId);
-    const c = getCategory(r.categoryId);
-    inner = `<div class="slot planned"><span class="rname">${escapeHtml(r.name)}</span><span class="rcat">${c?escapeHtml(c.name):''}</span></div>`;
+  } else if(slot.status==='planned' && (slot.recipeName || (slot.recipeId && getRecipe(slot.recipeId)))){
+    const name = slot.recipeName || getRecipe(slot.recipeId).name;
+    const catName = slot.categoryName || (slot.recipeId && getRecipe(slot.recipeId) ? (getCategory(getRecipe(slot.recipeId).categoryId)||{}).name : '');
+    inner = `<div class="slot planned"><span class="rname">${escapeHtml(name)}</span><span class="rcat">${escapeHtml(catName||'')}</span></div>`;
   } else {
     inner = `<div class="slot empty">+ add meal</div>`;
   }
@@ -359,6 +371,92 @@ function shiftWeek(n){
   state.lastViewedWeekStart = viewWeekStart;
   saveState();
   render();
+}
+
+/* ---------- PDF export ---------- */
+function downloadWeekPdf(){
+  if(!window.jspdf){
+    alert('The PDF library didn\'t load — check your internet connection and try again.');
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'pt', format:'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 54;
+  const ink = [51,41,28], soft = [140,124,99], brick=[214,84,55], sage=[24,110,99], line=[236,222,192];
+  let y = 64;
+
+  const days = weekDates(viewWeekStart);
+  const weekObj = state.weeks[viewWeekStart];
+  const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
+  const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+
+  doc.setFont('times','bold');
+  doc.setFontSize(24);
+  doc.setTextColor(...ink);
+  doc.text('Meal Plan', margin, y);
+  y += 20;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(11.5);
+  doc.setTextColor(...soft);
+  doc.text(`${firstLabel} \u2013 ${lastLabel}`, margin, y);
+  y += 18;
+  doc.setDrawColor(...line);
+  doc.setLineWidth(1);
+  doc.line(margin, y, pageWidth-margin, y);
+  y += 28;
+
+  days.forEach((date,i)=>{
+    const d = weekObj ? weekObj.days[i] : {lunch:emptySlot(), dinner:emptySlot()};
+
+    if(y > pageHeight - 100){ doc.addPage(); y = 64; }
+
+    doc.setFont('times','bold');
+    doc.setFontSize(15);
+    doc.setTextColor(...ink);
+    doc.text(dayName(date), margin, y);
+    const nameWidth = doc.getTextWidth(dayName(date));
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(10.5);
+    doc.setTextColor(...soft);
+    doc.text(dayShort(date), margin + nameWidth + 10, y);
+    y += 20;
+
+    ['lunch','dinner'].forEach(meal=>{
+      const slot = d[meal];
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...(meal==='lunch'?brick:sage));
+      doc.text(meal.toUpperCase(), margin + 14, y);
+
+      let label, italic=false;
+      if(slot.status==='out'){ label = 'Out — no meal needed'; italic=true; }
+      else if(slot.status==='planned'){
+        const catTxt = slot.categoryName ? `  (${slot.categoryName})` : '';
+        label = (slot.recipeName || '') + catTxt;
+      } else { label = 'Not planned'; italic=true; }
+
+      doc.setFont('helvetica', italic ? 'italic' : 'normal');
+      doc.setFontSize(11.5);
+      doc.setTextColor(...ink);
+      doc.text(label, margin + 78, y);
+      y += 18;
+    });
+
+    y += 8;
+    doc.setDrawColor(...line);
+    doc.setLineWidth(0.75);
+    doc.line(margin, y, pageWidth-margin, y);
+    y += 20;
+  });
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8.5);
+  doc.setTextColor(...soft);
+  doc.text('Meal Plan', margin, pageHeight-30);
+
+  doc.save(`meal-plan-${viewWeekStart}.pdf`);
 }
 
 function attachHomeHandlers(){
@@ -442,16 +540,26 @@ function freqLabel(r){
 function assignSlot(date, meal, recipeId, forceStatus){
   const weekObj = ensureWeek(viewWeekStart);
   const day = weekObj.days.find(d=>d.date===date);
-  if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null}; }
+  if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, categoryName:null}; }
   else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
   else {
-    day[meal] = {status:'planned', recipeId};
     const r = getRecipe(recipeId);
-    if(r) r.lastUsedWeekStart = viewWeekStart;
+    const cat = r ? getCategory(r.categoryId) : null;
+    day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, categoryName: cat?cat.name:null};
+    if(r){
+      r.lastUsedWeekStart = viewWeekStart;
+      removeIfFreezer(r);
+    }
   }
   saveState();
   closeOverlay();
   render();
+}
+function removeIfFreezer(r){
+  const cat = getCategory(r.categoryId);
+  if(cat && cat.name.trim().toLowerCase()==='freezer'){
+    state.recipes = state.recipes.filter(x=>x.id!==r.id);
+  }
 }
 
 /* ================= WIZARD ================= */
@@ -622,11 +730,14 @@ function generatePlan(){
   slotOrder.forEach((s,i)=>{
     if(i < pool.length){
       const r = pool[i];
+      const cat = getCategory(r.categoryId);
       const day = weekObj.days.find(d=>d.date===s.date);
-      day[s.meal] = {status:'planned', recipeId:r.id};
+      day[s.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, categoryName: cat?cat.name:null};
       r.lastUsedWeekStart = startISO;
     }
   });
+  // freezer items are used up once placed in the plan
+  pool.slice(0, slotOrder.length).forEach(r=>removeIfFreezer(r));
 
   state.weeks[startISO] = weekObj;
   state.lastViewedWeekStart = startISO;
@@ -660,12 +771,15 @@ function renderSettings(){
           <div class="rn">${escapeHtml(r.name)}</div>
           <div class="rmeta">${r.lastUsedWeekStart ? 'last used '+dayShort(r.lastUsedWeekStart) : 'never used'}</div>
         </div>
-        <div class="rm">
+        <div class="ractions">
+          <select onchange="setRecipeCategory('${r.id}',this.value)">
+            ${state.categories.map(c=>`<option value="${c.id}" ${c.id===r.categoryId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+          </select>
           <select onchange="setRecipeFreq('${r.id}',this.value)">
             ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${r.frequencyWeeks===n?'selected':''}>${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
           </select>
+          <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
         </div>
-        <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
       </div>`).join('');
 
     return `
@@ -745,6 +859,9 @@ function addRecipe(categoryId){
 }
 function setRecipeFreq(id, val){
   const r = getRecipe(id); if(r){ r.frequencyWeeks = parseInt(val,10)||1; saveState(); }
+}
+function setRecipeCategory(id, categoryId){
+  const r = getRecipe(id); if(r){ r.categoryId = categoryId; saveState(); render(); }
 }
 function deleteRecipe(id){
   state.recipes = state.recipes.filter(r=>r.id!==id);
