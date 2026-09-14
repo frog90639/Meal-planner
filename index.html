@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Meal Plan</title>
+<style>
+  :root{
+    --bg:#1E2A22;
+    --bg-elevated:#25342A;
+    --board-line:#324438;
+    --paper:#F6EFDE;
+    --paper-2:#EFE6CE;
+    --paper-line:#D9CBA0;
+    --ink:#2B2417;
+    --ink-soft:#6B6250;
+    --mustard:#D9A441;
+    --mustard-ink:#4A3410;
+    --brick:#B5482D;
+    --brick-dark:#8E3821;
+    --sage:#7D9C79;
+    --sage-dark:#4F6A4C;
+    --radius:12px;
+    --shadow:0 6px 18px rgba(0,0,0,.35);
+    --font-display:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #26382C 0%, var(--bg) 55%);
+    color:var(--paper);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+    padding-bottom:40px;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  .app{max-width:560px;margin:0 auto;padding:18px 16px 8px;}
+
+  /* Top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .brand{display:flex;flex-direction:column;line-height:1;}
+  .brand .kicker{font-size:11px;letter-spacing:.04em;color:var(--sage);margin-bottom:4px;}
+  .brand h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0;color:var(--paper);}
+  .iconbtn{
+    background:var(--bg-elevated);border:1px solid var(--board-line);color:var(--paper);
+    width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:18px;flex:none;
+  }
+  .iconbtn:active{transform:scale(.94);}
+
+  /* Stamp-style plan button */
+  .stamp-btn{
+    display:block;width:100%;text-align:center;
+    background:var(--brick);color:#FBF4E6;
+    border:2px solid #E7C79A;
+    border-radius:10px;
+    padding:14px 10px;
+    font-family:var(--font-display);
+    font-size:19px;font-weight:700;letter-spacing:.02em;
+    box-shadow:var(--shadow);
+    transform:rotate(-0.6deg);
+    margin:6px 0 20px;
+    position:relative;
+  }
+  .stamp-btn:active{transform:rotate(-0.6deg) scale(.98);}
+  .stamp-btn .sub{display:block;font-family:var(--font-body);font-weight:400;font-size:11.5px;opacity:.85;margin-top:2px;letter-spacing:.02em;}
+
+  /* Week nav */
+  .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
+  .weeknav .range{font-family:var(--font-display);font-size:17px;color:var(--paper);text-align:center;}
+  .weeknav .range small{display:block;font-family:var(--font-body);font-size:11px;color:var(--sage);margin-top:2px;letter-spacing:.03em;}
+  .navbtn{
+    background:none;border:none;color:var(--paper);font-size:22px;padding:4px 10px;line-height:1;opacity:.8;
+  }
+  .navbtn:active{opacity:1;}
+
+  /* Week card stack */
+  .week-wrap{overflow:hidden;position:relative;touch-action:pan-y;}
+  .daycard{
+    background:var(--paper);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    margin-bottom:10px;
+    position:relative;
+    padding-left:14px;
+    overflow:hidden;
+  }
+  .daycard::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--brick);
+  }
+  .daycard .dayhead{
+    display:flex;align-items:baseline;gap:8px;padding:10px 12px 4px;
+  }
+  .daycard .dayhead .dname{font-family:var(--font-display);font-weight:700;color:var(--ink);font-size:15.5px;}
+  .daycard .dayhead .ddate{font-size:12px;color:var(--ink-soft);}
+  .daycard .dayhead .today-flag{
+    margin-left:auto;font-size:10px;letter-spacing:.04em;color:var(--brick-dark);font-weight:700;
+    background:rgba(181,72,45,.12);padding:2px 6px;border-radius:6px;
+  }
+  .meal-row{
+    display:flex;align-items:center;gap:10px;
+    padding:8px 12px;
+    border-top:1px dashed var(--paper-line);
+  }
+  .meal-row .meal-label{
+    width:52px;flex:none;font-size:11px;letter-spacing:.03em;color:var(--ink-soft);text-transform:lowercase;
+  }
+  .meal-row .slot{
+    flex:1;min-height:36px;display:flex;flex-direction:column;justify-content:center;
+    border-radius:8px;padding:6px 10px;
+  }
+  .slot.empty{border:1.5px dashed var(--paper-line);color:var(--ink-soft);font-size:13.5px;}
+  .slot.planned{background:var(--paper-2);}
+  .slot.planned .rname{color:var(--ink);font-weight:600;font-size:14px;}
+  .slot.planned .rcat{color:var(--sage-dark);font-size:11px;margin-top:1px;}
+  .slot.out{background:rgba(125,156,121,.15);color:var(--sage-dark);font-size:13px;font-style:italic;}
+  .slot:active{filter:brightness(.97);}
+
+  .empty-week-hint{
+    text-align:center;color:var(--sage);font-size:13px;padding:18px 10px 6px;line-height:1.5;
+  }
+
+  /* Modal / overlay */
+  .overlay{
+    position:fixed;inset:0;background:rgba(15,20,15,.72);
+    display:flex;align-items:flex-end;justify-content:center;z-index:50;
+    animation:fadein .15s ease-out;
+  }
+  @keyframes fadein{from{opacity:0}to{opacity:1}}
+  @media(min-width:620px){.overlay{align-items:center;}}
+  .modal{
+    background:var(--paper);color:var(--ink);width:100%;max-width:520px;
+    border-radius:16px 16px 0 0;padding:20px 18px 22px;max-height:88vh;overflow-y:auto;
+  }
+  @media(min-width:620px){.modal{border-radius:16px;}}
+  .modal h2{font-family:var(--font-display);margin:0 0 4px;font-size:21px;color:var(--ink);}
+  .modal .desc{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;line-height:1.4;}
+  .steps-dots{display:flex;gap:6px;margin-bottom:14px;}
+  .steps-dots span{height:5px;flex:1;background:var(--paper-line);border-radius:3px;}
+  .steps-dots span.active{background:var(--brick);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.01em;}
+  .field input[type=date],.field input[type=text],.field input[type=number]{
+    width:100%;padding:11px 12px;border-radius:8px;border:1.5px solid var(--paper-line);
+    background:#fff;font-size:15px;color:var(--ink);font-family:var(--font-body);
+  }
+  .checklist{border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;}
+  .checklist .crow{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);
+    font-size:14px;background:#fff;
+  }
+  .checklist .crow:last-child{border-bottom:none;}
+  .checklist .crow .cname{flex:1;color:var(--ink);}
+  .checklist .crow .cname small{display:block;color:var(--ink-soft);font-size:11.5px;}
+  .checklist input[type=checkbox]{width:19px;height:19px;accent-color:var(--brick);}
+  .btnrow{display:flex;gap:10px;margin-top:18px;}
+  .btn{
+    flex:1;padding:13px 10px;border-radius:9px;border:none;font-size:15px;font-weight:600;text-align:center;
+  }
+  .btn.primary{background:var(--brick);color:#FBF4E6;}
+  .btn.primary:disabled{opacity:.45;}
+  .btn.ghost{background:transparent;color:var(--ink-soft);border:1.5px solid var(--paper-line);}
+  .btn.small{padding:8px 12px;font-size:13px;flex:none;}
+  .btn.danger{background:transparent;color:var(--brick-dark);border:1.5px solid rgba(181,72,45,.4);}
+
+  /* recipe picker */
+  .picker-cat{margin-bottom:14px;}
+  .picker-cat h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-dark);}
+  .picker-opt{
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+    padding:10px 12px;border:1px solid var(--paper-line);border-radius:8px;background:#fff;margin-bottom:6px;font-size:14px;
+  }
+  .picker-opt .meta{color:var(--ink-soft);font-size:11.5px;}
+  .picker-opt:active{background:var(--paper-2);}
+
+  /* settings */
+  .settings-wrap{padding-top:4px;}
+  .cat-card{background:var(--paper);border-radius:12px;padding:14px 14px 10px;margin-bottom:14px;box-shadow:var(--shadow);color:var(--ink);}
+  .cat-card .cat-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+  .cat-card .cat-head input[type=text]{
+    font-family:var(--font-display);font-weight:700;font-size:17px;border:none;background:transparent;color:var(--ink);
+    flex:1;padding:2px 0;
+  }
+  .target-stepper{display:flex;align-items:center;gap:6px;flex:none;}
+  .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);font-size:15px;line-height:1;}
+  .target-stepper .tval{width:38px;text-align:center;font-size:13px;color:var(--ink-soft);}
+  .recipe-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px dashed var(--paper-line);font-size:13.5px;}
+  .recipe-row .rinfo{flex:1;}
+  .recipe-row .rinfo .rn{color:var(--ink);}
+  .recipe-row .rinfo .rmeta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
+  .recipe-row .rm{width:74px;flex:none;}
+  .recipe-row .rm select{width:100%;border:1px solid var(--paper-line);border-radius:6px;padding:4px;font-size:12px;background:#fff;color:var(--ink);}
+  .add-recipe-form{display:flex;gap:6px;margin-top:10px;}
+  .add-recipe-form input[type=text]{flex:1;padding:8px 10px;border-radius:7px;border:1px solid var(--paper-line);font-size:13.5px;}
+  .add-recipe-form select{border-radius:7px;border:1px solid var(--paper-line);font-size:12.5px;padding:0 4px;}
+  .add-recipe-form button{background:var(--sage-dark);color:#fff;border:none;border-radius:7px;padding:0 14px;font-size:18px;}
+  .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;}
+  .add-cat-form{display:flex;gap:8px;margin-top:4px;}
+  .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:transparent;color:var(--paper);font-size:14px;}
+  .add-cat-form input::placeholder{color:var(--sage);}
+  .add-cat-form button{background:var(--mustard);color:var(--mustard-ink);border:none;border-radius:9px;padding:0 18px;font-weight:700;}
+  .backup-row{display:flex;gap:10px;margin-top:22px;}
+  .backup-row .btn{background:var(--bg-elevated);color:var(--paper);border:1px solid var(--board-line);}
+  .hint{color:var(--sage);font-size:11.5px;text-align:center;margin-top:10px;line-height:1.5;}
+  #fileimport{display:none;}
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;
+    box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="overlayRoot"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- storage ---------- */
+const STORE_KEY = 'mealPlan.v1';
+function loadState(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { categories:[], recipes:[], weeks:{}, lastViewedWeekStart:null };
+}
+function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+let state = loadState();
+
+/* ---------- date helpers ---------- */
+function toISO(d){ return d.toISOString().slice(0,10); }
+function fromISO(iso){ return new Date(iso+'T12:00:00'); }
+function addDays(iso,n){ const d=fromISO(iso); d.setDate(d.getDate()+n); return toISO(d); }
+function todayISO(){ return toISO(new Date()); }
+function weekDates(startISO){ return [0,1,2,3,4,5,6].map(i=>addDays(startISO,i)); }
+function weeksBetween(iso1, iso2){ return Math.round((fromISO(iso2)-fromISO(iso1))/(7*86400000)); }
+function dayName(iso){ return fromISO(iso).toLocaleDateString(undefined,{weekday:'long'}); }
+function dayShort(iso){ return fromISO(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
+}
+
+/* ---------- week data access ---------- */
+function emptySlot(){ return {status:'empty', recipeId:null}; }
+function ensureWeek(startISO){
+  if(!state.weeks[startISO]){
+    state.weeks[startISO] = {
+      startDate:startISO,
+      days: weekDates(startISO).map(date=>({date, lunch:emptySlot(), dinner:emptySlot()}))
+    };
+  }
+  return state.weeks[startISO];
+}
+function getRecipe(id){ return state.recipes.find(r=>r.id===id); }
+function getCategory(id){ return state.categories.find(c=>c.id===id); }
+
+/* ---------- view state ---------- */
+let view = 'home'; // 'home' | 'settings'
+let viewWeekStart = state.lastViewedWeekStart || mondayOnOrBefore(todayISO());
+function mondayOnOrBefore(iso){
+  const d = fromISO(iso);
+  const dow = d.getDay(); // 0 Sun..6 Sat
+  const back = (dow===0)?6:dow-1;
+  return addDays(iso, -back);
+}
+
+/* ================= RENDER: ROOT ================= */
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = view==='home' ? renderHome() : renderSettings();
+  attachHomeHandlers();
+}
+
+/* ================= HOME ================= */
+function renderHome(){
+  const days = weekDates(viewWeekStart);
+  const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const today = todayISO();
+  const weekObj = state.weeks[viewWeekStart];
+
+  const daysHtml = days.map((date,i)=>{
+    const d = weekObj ? weekObj.days[i] : {date, lunch:emptySlot(), dinner:emptySlot()};
+    return `
+    <div class="daycard">
+      <div class="dayhead">
+        <span class="dname">${dayName(date)}</span>
+        <span class="ddate">${dayShort(date)}</span>
+        ${date===today?'<span class="today-flag">today</span>':''}
+      </div>
+      ${renderMealRow(date,'lunch',d.lunch)}
+      ${renderMealRow(date,'dinner',d.dinner)}
+    </div>`;
+  }).join('');
+
+  const hint = !weekObj ? `<div class="empty-week-hint">Nothing planned yet for this week.<br>Tap a meal to add one, or use Plan meals above.</div>` : '';
+
+  return `
+    <div class="topbar">
+      <div class="brand">
+        <span class="kicker">this week's table</span>
+        <h1>Meal Plan</h1>
+      </div>
+      <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
+    </div>
+    <button class="stamp-btn" onclick="openWizard()">Plan meals
+      <span class="sub">choose a start day, mark days you're out</span>
+    </button>
+    <div class="weeknav">
+      <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
+      <div class="range">${firstLabel} – ${lastLabel}<small>swipe to change week</small></div>
+      <button class="navbtn" onclick="shiftWeek(7)">›</button>
+    </div>
+    <div class="week-wrap" id="weekWrap">
+      ${daysHtml}
+      ${hint}
+    </div>
+  `;
+}
+
+function renderMealRow(date, meal, slot){
+  let inner;
+  if(slot.status==='out'){
+    inner = `<div class="slot out">Out — no meal needed</div>`;
+  } else if(slot.status==='planned' && slot.recipeId && getRecipe(slot.recipeId)){
+    const r = getRecipe(slot.recipeId);
+    const c = getCategory(r.categoryId);
+    inner = `<div class="slot planned"><span class="rname">${escapeHtml(r.name)}</span><span class="rcat">${c?escapeHtml(c.name):''}</span></div>`;
+  } else {
+    inner = `<div class="slot empty">+ add meal</div>`;
+  }
+  return `<div class="meal-row" data-date="${date}" data-meal="${meal}" onclick="openSlotEditor('${date}','${meal}')">
+    <span class="meal-label">${meal}</span>${inner}
+  </div>`;
+}
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function shiftWeek(n){
+  viewWeekStart = addDays(viewWeekStart, n);
+  state.lastViewedWeekStart = viewWeekStart;
+  saveState();
+  render();
+}
+
+function attachHomeHandlers(){
+  const wrap = document.getElementById('weekWrap');
+  if(!wrap) return;
+  let sx=0, sy=0, dragging=false;
+  wrap.addEventListener('touchstart', e=>{
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
+  }, {passive:true});
+  wrap.addEventListener('touchend', e=>{
+    if(!dragging) return; dragging=false;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
+      shiftWeek(dx < 0 ? 7 : -7);
+    }
+  }, {passive:true});
+}
+
+/* ---------- slot editor ---------- */
+function openSlotEditor(date, meal){
+  ensureWeek(viewWeekStart);
+  const weekObj = state.weeks[viewWeekStart];
+  const dayIdx = weekObj.days.findIndex(d=>d.date===date);
+  const slot = weekObj.days[dayIdx][meal];
+
+  const catsHtml = state.categories.map(c=>{
+    const recs = state.recipes.filter(r=>r.categoryId===c.id);
+    if(!recs.length) return '';
+    return `<div class="picker-cat"><h4>${escapeHtml(c.name)}</h4>${recs.map(r=>`
+      <div class="picker-opt" onclick="assignSlot('${date}','${meal}','${r.id}')">
+        <span>${escapeHtml(r.name)}</span>
+        <span class="meta">${freqLabel(r)}</span>
+      </div>`).join('')}</div>`;
+  }).join('') || `<p class="desc">No recipes yet. Add some in Settings first.</p>`;
+
+  showOverlay(`
+    <h2>${dayName(date)} · ${meal}</h2>
+    <p class="desc">${dayShort(date)}</p>
+    <div class="btnrow" style="margin-top:0;margin-bottom:16px;">
+      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
+      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
+    </div>
+    ${catsHtml}
+  `);
+}
+function freqLabel(r){
+  if(!r.frequencyWeeks || r.frequencyWeeks<=1) return 'weekly ok';
+  return `every ${r.frequencyWeeks} wks`;
+}
+function assignSlot(date, meal, recipeId, forceStatus){
+  const weekObj = ensureWeek(viewWeekStart);
+  const day = weekObj.days.find(d=>d.date===date);
+  if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null}; }
+  else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
+  else {
+    day[meal] = {status:'planned', recipeId};
+    const r = getRecipe(recipeId);
+    if(r) r.lastUsedWeekStart = viewWeekStart;
+  }
+  saveState();
+  closeOverlay();
+  render();
+}
+
+/* ================= WIZARD ================= */
+let wizard = { startDate:null, skips:{} };
+function openWizard(){
+  wizard = { startDate: viewWeekStart, skips:{} };
+  renderWizardStep1();
+}
+function renderWizardStep1(){
+  showOverlay(`
+    <div class="steps-dots"><span class="active"></span><span></span></div>
+    <h2>Plan meals</h2>
+    <p class="desc">What day are you planning from?</p>
+    <div class="field">
+      <label>Start date</label>
+      <input type="date" id="wizDate" value="${wizard.startDate}">
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" onclick="wizardStep2()">Next</button>
+    </div>
+  `);
+}
+function wizardStep2(){
+  const val = document.getElementById('wizDate').value;
+  if(val) wizard.startDate = val;
+  const days = weekDates(wizard.startDate);
+  const rows = days.map(date=>['lunch','dinner'].map(meal=>{
+    const key = date+'_'+meal;
+    const checked = wizard.skips[key] ? 'checked' : '';
+    return `<div class="crow">
+      <span class="cname">${dayName(date)} ${meal}<small>${dayShort(date)}</small></span>
+      <input type="checkbox" data-key="${key}" ${checked} onchange="toggleSkip('${key}')">
+    </div>`;
+  }).join('')).join('');
+
+  showOverlay(`
+    <div class="steps-dots"><span class="active"></span><span class="active"></span></div>
+    <h2>Any meals you'll be out?</h2>
+    <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
+    <div class="checklist">${rows}</div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="renderWizardStep1()">Back</button>
+      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
+    </div>
+  `);
+}
+function toggleSkip(key){
+  wizard.skips[key] = !wizard.skips[key];
+}
+
+function generatePlan(){
+  const startISO = wizard.startDate;
+  const days = weekDates(startISO);
+  const existing = state.weeks[startISO];
+  const hasContent = existing && existing.days.some(d=>d.lunch.status!=='empty'||d.dinner.status!=='empty');
+  if(hasContent && !confirm('This week already has a plan. Replace it?')) return;
+
+  const weekObj = { startDate:startISO, days: days.map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
+
+  // mark skips as 'out'
+  const slotOrder = [];
+  days.forEach(date=>{
+    ['lunch','dinner'].forEach(meal=>{
+      const key = date+'_'+meal;
+      const day = weekObj.days.find(d=>d.date===date);
+      if(wizard.skips[key]) day[meal] = {status:'out', recipeId:null};
+      else slotOrder.push({date,meal});
+    });
+  });
+
+  // build per-category eligible pools
+  const pools = state.categories.filter(c=>c.weeklyTarget>0).map(cat=>{
+    const recs = state.recipes.filter(r=>r.categoryId===cat.id);
+    const eligible = recs.filter(r=>{
+      if(!r.lastUsedWeekStart) return true;
+      const freq = r.frequencyWeeks || 1;
+      return weeksBetween(r.lastUsedWeekStart, startISO) >= freq;
+    });
+    // least-recently-used first, shuffle ties
+    eligible.sort((a,b)=>{
+      const av = a.lastUsedWeekStart || '0000-00-00';
+      const bv = b.lastUsedWeekStart || '0000-00-00';
+      if(av===bv) return Math.random()-0.5;
+      return av<bv?-1:1;
+    });
+    return { cat, picks: eligible.slice(0, cat.weeklyTarget) };
+  });
+
+  // round-robin interleave
+  const pool = [];
+  let more = true, idx = 0;
+  while(more){
+    more = false;
+    for(const p of pools){
+      if(idx < p.picks.length){ pool.push(p.picks[idx]); more = true; }
+    }
+    idx++;
+  }
+
+  // assign to slots in order
+  slotOrder.forEach((s,i)=>{
+    if(i < pool.length){
+      const r = pool[i];
+      const day = weekObj.days.find(d=>d.date===s.date);
+      day[s.meal] = {status:'planned', recipeId:r.id};
+      r.lastUsedWeekStart = startISO;
+    }
+  });
+
+  state.weeks[startISO] = weekObj;
+  state.lastViewedWeekStart = startISO;
+  viewWeekStart = startISO;
+  saveState();
+  closeOverlay();
+  render();
+  const filled = Math.min(pool.length, slotOrder.length);
+  toast(filled < slotOrder.length ? `Planned ${filled} of ${slotOrder.length} meals — fill the rest manually` : 'Week planned');
+}
+
+/* ================= OVERLAY (modal) ================= */
+function showOverlay(html){
+  document.getElementById('overlayRoot').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeOverlay()">
+      <div class="modal">${html}</div>
+    </div>`;
+}
+function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
+
+/* ================= SETTINGS ================= */
+function openSettings(){ view='settings'; render(); }
+function backHome(){ view='home'; render(); }
+
+function renderSettings(){
+  const catsHtml = state.categories.map(cat=>{
+    const recs = state.recipes.filter(r=>r.categoryId===cat.id);
+    const recRows = recs.map(r=>`
+      <div class="recipe-row">
+        <div class="rinfo">
+          <div class="rn">${escapeHtml(r.name)}</div>
+          <div class="rmeta">${r.lastUsedWeekStart ? 'last used '+dayShort(r.lastUsedWeekStart) : 'never used'}</div>
+        </div>
+        <div class="rm">
+          <select onchange="setRecipeFreq('${r.id}',this.value)">
+            ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${r.frequencyWeeks===n?'selected':''}>${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
+          </select>
+        </div>
+        <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
+      </div>`).join('');
+
+    return `
+      <div class="cat-card">
+        <div class="cat-head">
+          <input type="text" value="${escapeHtml(cat.name)}" onchange="renameCategory('${cat.id}',this.value)">
+          <div class="target-stepper">
+            <button onclick="bumpTarget('${cat.id}',-1)">–</button>
+            <span class="tval">${cat.weeklyTarget}/wk</span>
+            <button onclick="bumpTarget('${cat.id}',1)">+</button>
+          </div>
+          <button class="del-x" onclick="deleteCategory('${cat.id}')">✕</button>
+        </div>
+        ${recRows}
+        <div class="add-recipe-form">
+          <input type="text" placeholder="Add a recipe name" id="newrec_${cat.id}">
+          <select id="newrecfreq_${cat.id}">
+            ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}">${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
+          </select>
+          <button onclick="addRecipe('${cat.id}')">+</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="topbar">
+      <button class="iconbtn" onclick="backHome()" aria-label="Back">‹</button>
+      <div class="brand" style="align-items:flex-end;">
+        <span class="kicker">categories &amp; recipes</span>
+        <h1 style="font-size:22px;">Settings</h1>
+      </div>
+    </div>
+    <div class="settings-wrap">
+      ${catsHtml || '<p class="hint">No categories yet — add one below to get started.</p>'}
+      <div class="add-cat-form">
+        <input type="text" id="newCatName" placeholder="New category, e.g. Pasta">
+        <button onclick="addCategory()">Add</button>
+      </div>
+      <div class="backup-row">
+        <button class="btn small" onclick="exportData()">Export backup</button>
+        <button class="btn small" onclick="document.getElementById('fileimport').click()">Import backup</button>
+      </div>
+      <input type="file" id="fileimport" accept="application/json" onchange="importData(event)">
+      <p class="hint">Data is stored locally in this browser only.</p>
+    </div>
+  `;
+}
+
+function addCategory(){
+  const input = document.getElementById('newCatName');
+  const name = input.value.trim();
+  if(!name) return;
+  state.categories.push({id:uid(), name, weeklyTarget:2});
+  saveState(); render();
+}
+function renameCategory(id, name){
+  const c = getCategory(id); if(c){ c.name = name.trim()||c.name; saveState(); }
+}
+function bumpTarget(id, delta){
+  const c = getCategory(id);
+  c.weeklyTarget = Math.max(0, (c.weeklyTarget||0)+delta);
+  saveState(); render();
+}
+function deleteCategory(id){
+  if(!confirm('Delete this category and its recipes?')) return;
+  state.categories = state.categories.filter(c=>c.id!==id);
+  state.recipes = state.recipes.filter(r=>r.categoryId!==id);
+  saveState(); render();
+}
+function addRecipe(categoryId){
+  const nameEl = document.getElementById('newrec_'+categoryId);
+  const freqEl = document.getElementById('newrecfreq_'+categoryId);
+  const name = nameEl.value.trim();
+  if(!name) return;
+  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, lastUsedWeekStart:null});
+  saveState(); render();
+}
+function setRecipeFreq(id, val){
+  const r = getRecipe(id); if(r){ r.frequencyWeeks = parseInt(val,10)||1; saveState(); }
+}
+function deleteRecipe(id){
+  state.recipes = state.recipes.filter(r=>r.id!==id);
+  saveState(); render();
+}
+
+/* ---------- backup ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'meal-plan-backup.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importData(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data.categories || !data.recipes || !data.weeks) throw new Error('bad file');
+      state = data;
+      saveState();
+      toast('Backup restored');
+      render();
+    }catch(e){ alert('Could not read that file.'); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
+/* ---------- init ---------- */
+render();
+</script>
+</body>
+</html>
