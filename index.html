@@ -532,14 +532,14 @@ function quickAdd(date, meal){
     state.categories.push(newCat);
     categoryId = newCat.id;
   }
-  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, multiplier:1, lastUsedWeekStart:null};
+  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null};
   state.recipes.push(recipe);
   assignSlot(date, meal, recipe.id);
 }
 function freqLabel(r){
   const parts = [];
   parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'weekly ok' : `every ${r.frequencyWeeks} wks`);
-  if(r.multiplier && r.multiplier>1) parts.push(`\u00d7${r.multiplier}/wk`);
+  if(r.multiply) parts.push('may repeat');
   return parts.join(' \u00b7 ');
 }
 function assignSlot(date, meal, recipeId, forceStatus){
@@ -658,7 +658,7 @@ function getOrCreateCategory(name, defaultTarget){
 function getOrCreateRecipeInCategory(name, categoryId){
   let r = state.recipes.find(r=>r.categoryId===categoryId && r.name.toLowerCase()===name.toLowerCase());
   if(!r){
-    r = {id:uid(), categoryId, name, frequencyWeeks:1, multiplier:1, lastUsedWeekStart:null};
+    r = {id:uid(), categoryId, name, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null};
     state.recipes.push(r);
   }
   return r;
@@ -699,8 +699,16 @@ function generatePlan(){
   }
 
   // build per-category eligible pools (excluding anything already used as a priority pick this week)
-  // weeklyTarget is a budget of meal-slots for the category; a recipe with a multiplier
-  // consumes that many slots so it always lands the full number of times, not just once.
+  // weeklyTarget is a budget of meal-slots for the category. A recipe marked "can repeat"
+  // has the app decide (2 or 3 times) how often it lands this week, consuming that many slots
+  // so it never ends up shown just once.
+  const copiesFor = new Map();
+  function decideCopies(r){
+    if(copiesFor.has(r.id)) return copiesFor.get(r.id);
+    const c = r.multiply ? (Math.random()<0.5?2:3) : 1;
+    copiesFor.set(r.id, c);
+    return c;
+  }
   const usedIds = new Set(priorityPool.map(r=>r.id));
   const pools = state.categories.filter(c=>c.weeklyTarget>0).map(cat=>{
     const recs = state.recipes.filter(r=>r.categoryId===cat.id && !usedIds.has(r.id));
@@ -721,12 +729,12 @@ function generatePlan(){
     for(const r of eligible){
       if(units >= cat.weeklyTarget) break;
       picks.push(r);
-      units += Math.max(1, r.multiplier||1);
+      units += decideCopies(r);
     }
     return { cat, picks };
   });
 
-  // round-robin interleave category picks (distinct recipes, not yet expanded by multiplier)
+  // round-robin interleave category picks (distinct recipes, not yet expanded)
   const categoryPool = [];
   let more = true, idx = 0;
   while(more){
@@ -740,10 +748,10 @@ function generatePlan(){
   // priority picks (freezer + new) go first, then category picks fill the rest
   const selectedDistinct = [...priorityPool, ...categoryPool];
 
-  // expand: a recipe with a multiplier fills that many slots, so it's never shown just once
+  // expand: a recipe marked "can repeat" fills 2-3 slots, so it's never shown just once
   const pool = [];
   selectedDistinct.forEach(r=>{
-    const copies = Math.max(1, r.multiplier||1);
+    const copies = decideCopies(r);
     for(let k=0;k<copies;k++) pool.push(r);
   });
 
@@ -801,9 +809,10 @@ function renderSettings(){
           </select>
         </div>
         <div class="ractions" style="margin-top:6px;">
-          <select onchange="setRecipeMultiplier('${r.id}',this.value)">
-            ${[1,2,3].map(n=>`<option value="${n}" ${(r.multiplier||1)===n?'selected':''}>${n===1?'once this week':n+'x this week'}</option>`).join('')}
-          </select>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);flex:1;">
+            <input type="checkbox" style="width:16px;height:16px;accent-color:var(--brick);" ${r.multiply?'checked':''} onchange="setRecipeMultiply('${r.id}',this.checked)">
+            can repeat 2-3x in a week
+          </label>
           <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
         </div>
       </div>`).join('');
@@ -880,14 +889,14 @@ function addRecipe(categoryId){
   const freqEl = document.getElementById('newrecfreq_'+categoryId);
   const name = nameEl.value.trim();
   if(!name) return;
-  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, multiplier:1, lastUsedWeekStart:null});
+  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, multiply:false, lastUsedWeekStart:null});
   saveState(); render();
 }
 function setRecipeFreq(id, val){
   const r = getRecipe(id); if(r){ r.frequencyWeeks = parseInt(val,10)||1; saveState(); }
 }
-function setRecipeMultiplier(id, val){
-  const r = getRecipe(id); if(r){ r.multiplier = parseInt(val,10)||1; saveState(); }
+function setRecipeMultiply(id, checked){
+  const r = getRecipe(id); if(r){ r.multiply = !!checked; saveState(); }
 }
 function setRecipeCategory(id, categoryId){
   const r = getRecipe(id); if(r){ r.categoryId = categoryId; saveState(); render(); }
