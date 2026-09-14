@@ -6,22 +6,22 @@
 <title>Meal Plan</title>
 <style>
   :root{
-    --bg:#1E2A22;
-    --bg-elevated:#25342A;
-    --board-line:#324438;
-    --paper:#F6EFDE;
-    --paper-2:#EFE6CE;
-    --paper-line:#D9CBA0;
-    --ink:#2B2417;
-    --ink-soft:#6B6250;
-    --mustard:#D9A441;
-    --mustard-ink:#4A3410;
-    --brick:#B5482D;
-    --brick-dark:#8E3821;
-    --sage:#7D9C79;
-    --sage-dark:#4F6A4C;
+    --bg:#FFF3E1;
+    --bg-elevated:#FFE7C2;
+    --board-line:#F1DBAE;
+    --paper:#FFFFFF;
+    --paper-2:#FFF3DE;
+    --paper-line:#F0DEBE;
+    --ink:#33291C;
+    --ink-soft:#8C7C63;
+    --mustard:#FFB238;
+    --mustard-ink:#5C3A00;
+    --brick:#FF6B4A;
+    --brick-dark:#E1502F;
+    --sage:#2FB6A3;
+    --sage-dark:#1D8577;
     --radius:12px;
-    --shadow:0 6px 18px rgba(0,0,0,.35);
+    --shadow:0 8px 20px rgba(150,90,30,.16);
     --font-display:Georgia,'Iowan Old Style','Palatino Linotype',serif;
     --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }
@@ -30,8 +30,8 @@
   body{
     margin:0;
     background:
-      radial-gradient(1200px 600px at 50% -10%, #26382C 0%, var(--bg) 55%);
-    color:var(--paper);
+      radial-gradient(1200px 600px at 50% -10%, #FFEACB 0%, var(--bg) 55%);
+    color:var(--ink);
     font-family:var(--font-body);
     -webkit-font-smoothing:antialiased;
     min-height:100%;
@@ -44,10 +44,10 @@
   /* Top bar */
   .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .brand{display:flex;flex-direction:column;line-height:1;}
-  .brand .kicker{font-size:11px;letter-spacing:.04em;color:var(--sage);margin-bottom:4px;}
-  .brand h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0;color:var(--paper);}
+  .brand .kicker{font-size:11px;letter-spacing:.04em;color:var(--sage-dark);margin-bottom:4px;}
+  .brand h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0;color:var(--ink);}
   .iconbtn{
-    background:var(--bg-elevated);border:1px solid var(--board-line);color:var(--paper);
+    background:var(--bg-elevated);border:1px solid var(--board-line);color:var(--ink);
     width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
     font-size:18px;flex:none;
   }
@@ -72,10 +72,10 @@
 
   /* Week nav */
   .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
-  .weeknav .range{font-family:var(--font-display);font-size:17px;color:var(--paper);text-align:center;}
-  .weeknav .range small{display:block;font-family:var(--font-body);font-size:11px;color:var(--sage);margin-top:2px;letter-spacing:.03em;}
+  .weeknav .range{font-family:var(--font-display);font-size:17px;color:var(--ink);text-align:center;}
+  .weeknav .range small{display:block;font-family:var(--font-body);font-size:11px;color:var(--sage-dark);margin-top:2px;letter-spacing:.03em;}
   .navbtn{
-    background:none;border:none;color:var(--paper);font-size:22px;padding:4px 10px;line-height:1;opacity:.8;
+    background:none;border:none;color:var(--ink);font-size:22px;padding:4px 10px;line-height:1;opacity:.7;
   }
   .navbtn:active{opacity:1;}
 
@@ -118,11 +118,11 @@
   .slot.planned{background:var(--paper-2);}
   .slot.planned .rname{color:var(--ink);font-weight:600;font-size:14px;}
   .slot.planned .rcat{color:var(--sage-dark);font-size:11px;margin-top:1px;}
-  .slot.out{background:rgba(125,156,121,.15);color:var(--sage-dark);font-size:13px;font-style:italic;}
+  .slot.out{background:rgba(47,182,163,.13);color:var(--sage-dark);font-size:13px;font-style:italic;}
   .slot:active{filter:brightness(.97);}
 
   .empty-week-hint{
-    text-align:center;color:var(--sage);font-size:13px;padding:18px 10px 6px;line-height:1.5;
+    text-align:center;color:var(--ink-soft);font-size:13px;padding:18px 10px 6px;line-height:1.5;
   }
 
   /* Modal / overlay */
@@ -145,10 +145,11 @@
   .steps-dots span.active{background:var(--brick);}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.01em;}
-  .field input[type=date],.field input[type=text],.field input[type=number]{
+  .field input[type=date],.field input[type=text],.field input[type=number],.field textarea{
     width:100%;padding:11px 12px;border-radius:8px;border:1.5px solid var(--paper-line);
     background:#fff;font-size:15px;color:var(--ink);font-family:var(--font-body);
   }
+  .field textarea{resize:vertical;line-height:1.4;}
   .checklist{border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;}
   .checklist .crow{
     display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);
@@ -199,14 +200,16 @@
   .add-recipe-form input[type=text]{flex:1;padding:8px 10px;border-radius:7px;border:1px solid var(--paper-line);font-size:13.5px;}
   .add-recipe-form select{border-radius:7px;border:1px solid var(--paper-line);font-size:12.5px;padding:0 4px;}
   .add-recipe-form button{background:var(--sage-dark);color:#fff;border:none;border-radius:7px;padding:0 14px;font-size:18px;}
+  .quick-add{display:flex;flex-direction:column;gap:8px;}
+  .quick-add select,.quick-add input[type=text]{padding:9px 10px;border-radius:8px;border:1px solid var(--paper-line);font-size:14px;background:#fff;color:var(--ink);}
   .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;}
   .add-cat-form{display:flex;gap:8px;margin-top:4px;}
-  .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:transparent;color:var(--paper);font-size:14px;}
-  .add-cat-form input::placeholder{color:var(--sage);}
+  .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:#fff;color:var(--ink);font-size:14px;}
+  .add-cat-form input::placeholder{color:var(--ink-soft);}
   .add-cat-form button{background:var(--mustard);color:var(--mustard-ink);border:none;border-radius:9px;padding:0 18px;font-weight:700;}
   .backup-row{display:flex;gap:10px;margin-top:22px;}
-  .backup-row .btn{background:var(--bg-elevated);color:var(--paper);border:1px solid var(--board-line);}
-  .hint{color:var(--sage);font-size:11.5px;text-align:center;margin-top:10px;line-height:1.5;}
+  .backup-row .btn{background:var(--bg-elevated);color:var(--ink);border:1px solid var(--board-line);}
+  .hint{color:var(--ink-soft);font-size:11.5px;text-align:center;margin-top:10px;line-height:1.5;}
   #fileimport{display:none;}
   .toast{
     position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
@@ -319,7 +322,7 @@ function renderHome(){
       <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
     </div>
     <button class="stamp-btn" onclick="openWizard()">Plan meals
-      <span class="sub">choose a start day, mark days you're out</span>
+      <span class="sub">start day, days you're out, freezer, new recipes</span>
     </button>
     <div class="weeknav">
       <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
@@ -390,7 +393,9 @@ function openSlotEditor(date, meal){
         <span>${escapeHtml(r.name)}</span>
         <span class="meta">${freqLabel(r)}</span>
       </div>`).join('')}</div>`;
-  }).join('') || `<p class="desc">No recipes yet. Add some in Settings first.</p>`;
+  }).join('') || `<p class="desc">No recipes yet — add one below.</p>`;
+
+  const catOptions = state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
 
   showOverlay(`
     <h2>${dayName(date)} · ${meal}</h2>
@@ -400,7 +405,35 @@ function openSlotEditor(date, meal){
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
     </div>
     ${catsHtml}
+    <div class="picker-cat">
+      <h4>Add a new recipe</h4>
+      <div class="quick-add">
+        <select id="qaCat">
+          ${catOptions}
+          <option value="__new__">+ New category…</option>
+        </select>
+        <input type="text" id="qaName" placeholder="Recipe name">
+      </div>
+      <button class="btn primary small" style="width:100%;margin-top:8px;" onclick="quickAdd('${date}','${meal}')">Add &amp; use for this meal</button>
+    </div>
   `);
+}
+function quickAdd(date, meal){
+  const nameEl = document.getElementById('qaName');
+  const catEl = document.getElementById('qaCat');
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  let categoryId = catEl.value;
+  if(categoryId === '__new__'){
+    const catName = prompt('New category name:');
+    if(!catName || !catName.trim()) return;
+    const newCat = {id:uid(), name:catName.trim(), weeklyTarget:2};
+    state.categories.push(newCat);
+    categoryId = newCat.id;
+  }
+  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, lastUsedWeekStart:null};
+  state.recipes.push(recipe);
+  assignSlot(date, meal, recipe.id);
 }
 function freqLabel(r){
   if(!r.frequencyWeeks || r.frequencyWeeks<=1) return 'weekly ok';
@@ -422,14 +455,14 @@ function assignSlot(date, meal, recipeId, forceStatus){
 }
 
 /* ================= WIZARD ================= */
-let wizard = { startDate:null, skips:{} };
+let wizard = { startDate:null, skips:{}, freezerText:'', newText:'' };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, skips:{} };
+  wizard = { startDate: viewWeekStart, skips:{}, freezerText:'', newText:'' };
   renderWizardStep1();
 }
 function renderWizardStep1(){
   showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span></span></div>
+    <div class="steps-dots"><span class="active"></span><span></span><span></span><span></span></div>
     <h2>Plan meals</h2>
     <p class="desc">What day are you planning from?</p>
     <div class="field">
@@ -456,21 +489,70 @@ function wizardStep2(){
   }).join('')).join('');
 
   showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span class="active"></span></div>
+    <div class="steps-dots"><span class="active"></span><span class="active"></span><span></span><span></span></div>
     <h2>Any meals you'll be out?</h2>
     <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
     <div class="checklist">${rows}</div>
     <div class="btnrow">
       <button class="btn ghost" onclick="renderWizardStep1()">Back</button>
-      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
+      <button class="btn primary" onclick="wizardStep3()">Next</button>
     </div>
   `);
 }
 function toggleSkip(key){
   wizard.skips[key] = !wizard.skips[key];
 }
+function wizardStep3(){
+  showOverlay(`
+    <div class="steps-dots"><span class="active"></span><span class="active"></span><span class="active"></span><span></span></div>
+    <h2>What's in the freezer?</h2>
+    <p class="desc">List anything you want worked into this week — one per line or separated by commas. Leave blank to skip.</p>
+    <div class="field">
+      <textarea id="wizFreezer" rows="4" placeholder="e.g. chicken thighs, beef mince, salmon fillets">${escapeHtml(wizard.freezerText)}</textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep2()">Back</button>
+      <button class="btn primary" onclick="wizardStep4()">Next</button>
+    </div>
+  `);
+}
+function wizardStep4(){
+  wizard.freezerText = document.getElementById('wizFreezer').value;
+  showOverlay(`
+    <div class="steps-dots"><span class="active"></span><span class="active"></span><span class="active"></span><span class="active"></span></div>
+    <h2>Cooking anything new?</h2>
+    <p class="desc">List any new recipes you want to try this week — one per line or separated by commas. These get added to a New category. Leave blank to skip.</p>
+    <div class="field">
+      <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep3()">Back</button>
+      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
+    </div>
+  `);
+}
+function parseList(text){
+  return (text||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
+}
+function getOrCreateCategory(name, defaultTarget){
+  let cat = state.categories.find(c=>c.name.toLowerCase()===name.toLowerCase());
+  if(!cat){
+    cat = {id:uid(), name, weeklyTarget: defaultTarget};
+    state.categories.push(cat);
+  }
+  return cat;
+}
+function getOrCreateRecipeInCategory(name, categoryId){
+  let r = state.recipes.find(r=>r.categoryId===categoryId && r.name.toLowerCase()===name.toLowerCase());
+  if(!r){
+    r = {id:uid(), categoryId, name, frequencyWeeks:1, lastUsedWeekStart:null};
+    state.recipes.push(r);
+  }
+  return r;
+}
 
 function generatePlan(){
+  wizard.newText = document.getElementById('wizNew').value;
   const startISO = wizard.startDate;
   const days = weekDates(startISO);
   const existing = state.weeks[startISO];
@@ -490,9 +572,23 @@ function generatePlan(){
     });
   });
 
-  // build per-category eligible pools
+  // freezer items + new-to-try items get worked in first, as priority picks
+  const priorityPool = [];
+  const freezerItems = parseList(wizard.freezerText);
+  if(freezerItems.length){
+    const freezerCat = getOrCreateCategory('Freezer', 0);
+    freezerItems.forEach(name=> priorityPool.push(getOrCreateRecipeInCategory(name, freezerCat.id)));
+  }
+  const newItems = parseList(wizard.newText);
+  if(newItems.length){
+    const newCat = getOrCreateCategory('New', 0);
+    newItems.forEach(name=> priorityPool.push(getOrCreateRecipeInCategory(name, newCat.id)));
+  }
+
+  // build per-category eligible pools (excluding anything already used as a priority pick this week)
+  const usedIds = new Set(priorityPool.map(r=>r.id));
   const pools = state.categories.filter(c=>c.weeklyTarget>0).map(cat=>{
-    const recs = state.recipes.filter(r=>r.categoryId===cat.id);
+    const recs = state.recipes.filter(r=>r.categoryId===cat.id && !usedIds.has(r.id));
     const eligible = recs.filter(r=>{
       if(!r.lastUsedWeekStart) return true;
       const freq = r.frequencyWeeks || 1;
@@ -508,16 +604,19 @@ function generatePlan(){
     return { cat, picks: eligible.slice(0, cat.weeklyTarget) };
   });
 
-  // round-robin interleave
-  const pool = [];
+  // round-robin interleave category picks
+  const categoryPool = [];
   let more = true, idx = 0;
   while(more){
     more = false;
     for(const p of pools){
-      if(idx < p.picks.length){ pool.push(p.picks[idx]); more = true; }
+      if(idx < p.picks.length){ categoryPool.push(p.picks[idx]); more = true; }
     }
     idx++;
   }
+
+  // priority picks (freezer + new) go first, then category picks fill the rest
+  const pool = [...priorityPool, ...categoryPool];
 
   // assign to slots in order
   slotOrder.forEach((s,i)=>{
