@@ -83,69 +83,33 @@
   .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
   .weeknav .range{font-family:var(--font-display);font-size:17px;color:var(--ink);text-align:center;}
   .weeknav .range small{display:block;font-family:var(--font-body);font-size:11px;color:var(--sage-dark);margin-top:2px;letter-spacing:.03em;}
-  .navbtn{
-    background:none;border:none;color:var(--ink);font-size:22px;padding:4px 10px;line-height:1;opacity:.7;
-  }
+  .navbtn{background:none;border:none;color:var(--ink);font-size:22px;padding:4px 10px;line-height:1;opacity:.7;}
   .navbtn:active{opacity:1;}
 
   /* Week card stack */
   .week-wrap{overflow:hidden;position:relative;touch-action:pan-y;}
-  .daycard{
-    background:var(--paper);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    margin-bottom:10px;
-    position:relative;
-    padding-left:14px;
-    overflow:hidden;
-  }
-  .daycard::before{
-    content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--brick);
-  }
-  .daycard .dayhead{
-    display:flex;align-items:baseline;gap:8px;padding:10px 12px 4px;
-  }
+  .daycard{background:var(--paper);border-radius:var(--radius);box-shadow:var(--shadow);margin-bottom:10px;position:relative;padding-left:14px;overflow:hidden;}
+  .daycard::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--brick);}
+  .daycard .dayhead{display:flex;align-items:baseline;gap:8px;padding:10px 12px 4px;}
   .daycard .dayhead .dname{font-family:var(--font-display);font-weight:700;color:var(--ink);font-size:15.5px;}
   .daycard .dayhead .ddate{font-size:12px;color:var(--ink-soft);}
-  .daycard .dayhead .today-flag{
-    margin-left:auto;font-size:10px;letter-spacing:.04em;color:var(--brick-dark);font-weight:700;
-    background:rgba(181,72,45,.12);padding:2px 6px;border-radius:6px;
-  }
-  .meal-row{
-    display:flex;align-items:center;gap:10px;
-    padding:8px 12px;
-    border-top:1px dashed var(--paper-line);
-  }
-  .meal-row .meal-label{
-    width:52px;flex:none;font-size:11px;letter-spacing:.03em;color:var(--ink-soft);text-transform:lowercase;
-  }
-  .meal-row .slot{
-    flex:1;min-height:36px;display:flex;flex-direction:column;justify-content:center;
-    border-radius:8px;padding:6px 10px;
-  }
+  .daycard .dayhead .today-flag{margin-left:auto;font-size:10px;letter-spacing:.04em;color:var(--brick-dark);font-weight:700;background:rgba(181,72,45,.12);padding:2px 6px;border-radius:6px;}
+  .meal-row{display:flex;align-items:center;gap:10px;padding:8px 12px;border-top:1px dashed var(--paper-line);}
+  .meal-row .meal-label{width:52px;flex:none;font-size:11px;letter-spacing:.03em;color:var(--ink-soft);text-transform:lowercase;}
+  .meal-row .slot{flex:1;min-height:36px;display:flex;flex-direction:column;justify-content:center;border-radius:8px;padding:6px 10px;}
   .slot.empty{border:1.5px dashed var(--paper-line);color:var(--ink-soft);font-size:13.5px;}
   .slot.planned{background:var(--paper-2);}
   .slot.planned .rname{color:var(--ink);font-weight:600;font-size:14px;}
   .slot.planned .rcat{color:var(--sage-dark);font-size:11px;margin-top:1px;}
   .slot.out{background:rgba(47,182,163,.13);color:var(--sage-dark);font-size:13px;font-style:italic;}
   .slot:active{filter:brightness(.97);}
-
-  .empty-week-hint{
-    text-align:center;color:var(--ink-soft);font-size:13px;padding:18px 10px 6px;line-height:1.5;
-  }
+  .empty-week-hint{text-align:center;color:var(--ink-soft);font-size:13px;padding:18px 10px 6px;line-height:1.5;}
 
   /* Modal / overlay */
-  .overlay{
-    position:fixed;inset:0;background:rgba(15,20,15,.72);
-    display:flex;align-items:flex-end;justify-content:center;z-index:50;
-    animation:fadein .15s ease-out;
-  }
+  .overlay{position:fixed;inset:0;background:rgba(15,20,15,.72);display:flex;align-items:flex-end;justify-content:center;z-index:50;animation:fadein .15s ease-out;}
   @keyframes fadein{from{opacity:0}to{opacity:1}}
   @media(min-width:620px){.overlay{align-items:center;}}
-  .modal{
-    background:var(--paper);color:var(--ink);width:100%;max-width:520px;
-    border-radius:16px 16px 0 0;padding:20px 18px 22px;max-height:88vh;overflow-y:auto;
-  }
+  .modal{background:var(--paper);color:var(--ink);width:100%;max-width:520px;border-radius:16px 16px 0 0;padding:20px 18px 22px;max-height:88vh;overflow-y:auto;}
   @media(min-width:620px){.modal{border-radius:16px;}}
   .modal h2{font-family:var(--font-display);margin:0 0 4px;font-size:21px;color:var(--ink);}
   .modal .desc{color:var(--ink-soft);font-size:13.5px;margin:0 0 16px;line-height:1.4;}
@@ -154,77 +118,65 @@
   .steps-dots span.active{background:var(--brick);}
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.01em;}
-  .field input[type=date],.field input[type=text],.field input[type=number],.field textarea{
+  .field input[type=date],.field input[type=text],.field input[type=number],.field textarea,.field select{
     width:100%;padding:11px 12px;border-radius:8px;border:1.5px solid var(--paper-line);
     background:#fff;font-size:15px;color:var(--ink);font-family:var(--font-body);
   }
   .field textarea{resize:vertical;line-height:1.4;}
   .checklist{border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;}
-  .checklist .crow{
-    display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);
-    font-size:14px;background:#fff;
-  }
+  .checklist .crow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);font-size:14px;background:#fff;}
   .checklist .crow:last-child{border-bottom:none;}
   .checklist .crow .cname{flex:1;color:var(--ink);}
   .checklist .crow .cname small{display:block;color:var(--ink-soft);font-size:11.5px;}
   .checklist input[type=checkbox]{width:19px;height:19px;accent-color:var(--brick);}
   .btnrow{display:flex;gap:10px;margin-top:18px;}
-  .btn{
-    flex:1;padding:13px 10px;border-radius:9px;border:none;font-size:15px;font-weight:600;text-align:center;
-  }
+  .btn{flex:1;padding:13px 10px;border-radius:9px;border:none;font-size:15px;font-weight:600;text-align:center;}
   .btn.primary{background:var(--brick);color:#FBF4E6;}
   .btn.primary:disabled{opacity:.45;}
   .btn.ghost{background:transparent;color:var(--ink-soft);border:1.5px solid var(--paper-line);}
   .btn.small{padding:8px 12px;font-size:13px;flex:none;}
   .btn.danger{background:transparent;color:var(--brick-dark);border:1.5px solid rgba(181,72,45,.4);}
 
-  /* recipe picker */
+  /* chips (meal base / meal type multi-select) */
+  .chip-group{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{padding:7px 13px;border-radius:16px;border:1.5px solid var(--paper-line);background:#fff;font-size:12.5px;color:var(--ink-soft);}
+  .chip.active{background:var(--brick);border-color:var(--brick);color:#fff;}
+  .chip.type-chip.active{background:var(--sage-dark);border-color:var(--sage-dark);color:#fff;}
+
+  /* recipe picker (slot editor) */
   .picker-cat{margin-bottom:14px;}
   .picker-cat h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-dark);}
-  .picker-opt{
-    display:flex;justify-content:space-between;align-items:center;gap:8px;
-    padding:10px 12px;border:1px solid var(--paper-line);border-radius:8px;background:#fff;margin-bottom:6px;font-size:14px;
-  }
+  .picker-opt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--paper-line);border-radius:8px;background:#fff;margin-bottom:6px;font-size:14px;}
   .picker-opt .meta{color:var(--ink-soft);font-size:11.5px;}
   .picker-opt:active{background:var(--paper-2);}
 
   /* settings */
   .settings-wrap{padding-top:4px;}
-  .cat-card{background:var(--paper);border-radius:12px;padding:14px 14px 10px;margin-bottom:14px;box-shadow:var(--shadow);color:var(--ink);}
-  .cat-card .cat-head{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
-  .cat-card .cat-head input[type=text]{
-    font-family:var(--font-display);font-weight:700;font-size:17px;border:none;background:transparent;color:var(--ink);
-    flex:1;padding:2px 0;
-  }
+  .cat-card{background:var(--paper);border-radius:12px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:var(--shadow);color:var(--ink);}
+  .section-title{font-family:var(--font-display);font-size:16px;margin:0 0 4px;color:var(--ink);}
+  .section-desc{font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.4;}
+  .rule-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:1px dashed var(--paper-line);}
+  .rule-row:first-child{border-top:none;}
+  .rule-row input[type=text]{flex:1 1 100%;font-family:var(--font-display);font-weight:700;font-size:15px;border:none;background:transparent;color:var(--ink);padding:2px 0;}
   .target-stepper{display:flex;align-items:center;gap:6px;flex:none;}
   .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);font-size:15px;line-height:1;}
-  .target-stepper .tval{width:38px;text-align:center;font-size:13px;color:var(--ink-soft);}
-  .recipe-row{padding:8px 0;border-top:1px dashed var(--paper-line);font-size:13.5px;}
-  .recipe-row .rinfo{margin-bottom:6px;}
-  .recipe-row .rinfo .rn{color:var(--ink);}
-  .recipe-row .rinfo .rmeta{color:var(--ink-soft);font-size:11.5px;margin-top:1px;}
-  .recipe-row .ractions{display:flex;align-items:center;gap:6px;}
-  .recipe-row .ractions select{flex:1;min-width:0;border:1px solid var(--paper-line);border-radius:6px;padding:4px;font-size:12px;background:#fff;color:var(--ink);}
-  .add-recipe-form{display:flex;gap:6px;margin-top:10px;}
-  .add-recipe-form input[type=text]{flex:1;padding:8px 10px;border-radius:7px;border:1px solid var(--paper-line);font-size:13.5px;}
-  .add-recipe-form select{border-radius:7px;border:1px solid var(--paper-line);font-size:12.5px;padding:0 4px;}
-  .add-recipe-form button{background:var(--sage-dark);color:#fff;border:none;border-radius:7px;padding:0 14px;font-size:18px;}
-  .quick-add{display:flex;flex-direction:column;gap:8px;}
-  .quick-add select,.quick-add input[type=text]{padding:9px 10px;border-radius:8px;border:1px solid var(--paper-line);font-size:14px;background:#fff;color:var(--ink);}
-  .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;}
-  .add-cat-form{display:flex;gap:8px;margin-top:4px;}
+  .target-stepper .tval{width:52px;text-align:center;font-size:12px;color:var(--ink-soft);}
+  .rule-row select{flex:none;border:1px solid var(--paper-line);border-radius:6px;font-size:11px;padding:5px;background:#fff;color:var(--ink);}
+  .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;flex:none;}
+  .add-cat-form{display:flex;gap:8px;margin-top:10px;}
   .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:#fff;color:var(--ink);font-size:14px;}
   .add-cat-form input::placeholder{color:var(--ink-soft);}
   .add-cat-form button{background:var(--mustard);color:var(--mustard-ink);border:none;border-radius:9px;padding:0 18px;font-weight:700;}
+  .recipe-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px dashed var(--paper-line);}
+  .recipe-row:first-child{border-top:none;}
+  .recipe-row .rinfo .rn{color:var(--ink);font-size:14px;}
+  .recipe-row .rinfo .rmeta{color:var(--ink-soft);font-size:11.5px;margin-top:2px;}
+  .recipe-row .chev{color:var(--ink-soft);font-size:17px;flex:none;}
   .backup-row{display:flex;gap:10px;margin-top:22px;}
   .backup-row .btn{background:var(--bg-elevated);color:var(--ink);border:1px solid var(--board-line);}
   .hint{color:var(--ink-soft);font-size:11.5px;text-align:center;margin-top:10px;line-height:1.5;}
   #fileimport{display:none;}
-  .toast{
-    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
-    background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;
-    box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
-  }
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
 </style>
 </head>
@@ -234,19 +186,74 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* ---------- storage ---------- */
-const STORE_KEY = 'mealPlan.v1';
+/* ============================================================
+   STORAGE + MIGRATION
+   ============================================================ */
+const STORE_KEY = 'mealPlan.v2';
+const OLD_STORE_KEY = 'mealPlan.v1';
+
+function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+
+function seedDefaultState(){
+  const mealBases = ['Pasta','Rice','Potato','Noodles','Bread','Salad'].map(name=>({id:uid(), name, weeklyTarget:1}));
+  const mealTypes = [
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch'},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner'}
+  ];
+  return { mealBases, mealTypes, recipes:[], weeks:{}, lastViewedWeekStart:null };
+}
+function migrateFromV1(old){
+  const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0}));
+  const mealTypes = [
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch'},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner'}
+  ];
+  const recipes = (old.recipes||[]).map(r=>({
+    id:r.id, name:r.name,
+    baseIds: r.categoryId ? [r.categoryId] : [],
+    typeIds: [],
+    frequencyWeeks: r.frequencyWeeks||1,
+    multiply: !!r.multiply,
+    lastUsedWeekStart: r.lastUsedWeekStart||null,
+    ephemeral:false
+  }));
+  const weeks = {};
+  Object.keys(old.weeks||{}).forEach(k=>{
+    const wk = old.weeks[k];
+    weeks[k] = {
+      startDate: wk.startDate,
+      days: wk.days.map(d=>({
+        date:d.date,
+        lunch: migrateSlotV1(d.lunch),
+        dinner: migrateSlotV1(d.dinner)
+      }))
+    };
+  });
+  return { mealBases, mealTypes, recipes, weeks, lastViewedWeekStart: old.lastViewedWeekStart||null };
+}
+function migrateSlotV1(s){
+  if(!s) return {status:'empty', recipeId:null, recipeName:null, baseLabel:null};
+  return {status:s.status, recipeId:s.recipeId||null, recipeName:s.recipeName||null, baseLabel:s.categoryName||null};
+}
 function loadState(){
   try{
-    const raw = localStorage.getItem(STORE_KEY);
-    if(raw) return JSON.parse(raw);
+    const rawV2 = localStorage.getItem(STORE_KEY);
+    if(rawV2) return JSON.parse(rawV2);
+    const rawV1 = localStorage.getItem(OLD_STORE_KEY);
+    if(rawV1) return migrateFromV1(JSON.parse(rawV1));
   }catch(e){}
-  return { categories:[], recipes:[], weeks:{}, lastViewedWeekStart:null };
+  return seedDefaultState();
 }
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 let state = loadState();
 
-/* ---------- date helpers ---------- */
+/* ============================================================
+   DATE HELPERS
+   ============================================================ */
 function toISO(d){ return d.toISOString().slice(0,10); }
 function fromISO(iso){ return new Date(iso+'T12:00:00'); }
 function addDays(iso,n){ const d=fromISO(iso); d.setDate(d.getDate()+n); return toISO(d); }
@@ -255,9 +262,16 @@ function weekDates(startISO){ return [0,1,2,3,4,5,6].map(i=>addDays(startISO,i))
 function weeksBetween(iso1, iso2){ return Math.round((fromISO(iso2)-fromISO(iso1))/(7*86400000)); }
 function dayName(iso){ return fromISO(iso).toLocaleDateString(undefined,{weekday:'long'}); }
 function dayShort(iso){ return fromISO(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
-function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
+function mondayOnOrBefore(iso){
+  const d = fromISO(iso);
+  const dow = d.getDay();
+  const back = (dow===0)?6:dow-1;
+  return addDays(iso, -back);
+}
 
-/* ---------- toast ---------- */
+/* ============================================================
+   TOAST
+   ============================================================ */
 let toastTimer;
 function toast(msg){
   const el = document.getElementById('toast');
@@ -267,38 +281,59 @@ function toast(msg){
   toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
 }
 
-/* ---------- week data access ---------- */
-function emptySlot(){ return {status:'empty', recipeId:null, recipeName:null, categoryName:null}; }
+/* ============================================================
+   DATA ACCESS
+   ============================================================ */
+function emptySlot(){ return {status:'empty', recipeId:null, recipeName:null, baseLabel:null}; }
 function ensureWeek(startISO){
   if(!state.weeks[startISO]){
-    state.weeks[startISO] = {
-      startDate:startISO,
-      days: weekDates(startISO).map(date=>({date, lunch:emptySlot(), dinner:emptySlot()}))
-    };
+    state.weeks[startISO] = { startDate:startISO, days: weekDates(startISO).map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
   }
   return state.weeks[startISO];
 }
 function getRecipe(id){ return state.recipes.find(r=>r.id===id); }
-function getCategory(id){ return state.categories.find(c=>c.id===id); }
-
-/* ---------- view state ---------- */
-let view = 'home'; // 'home' | 'settings'
-let viewWeekStart = state.lastViewedWeekStart || mondayOnOrBefore(todayISO());
-function mondayOnOrBefore(iso){
-  const d = fromISO(iso);
-  const dow = d.getDay(); // 0 Sun..6 Sat
-  const back = (dow===0)?6:dow-1;
-  return addDays(iso, -back);
+function getMealBase(id){ return state.mealBases.find(b=>b.id===id); }
+function getMealType(id){ return state.mealTypes.find(t=>t.id===id); }
+function baseNames(r){ return (r.baseIds||[]).map(id=>{const b=getMealBase(id); return b?b.name:null;}).filter(Boolean); }
+function typeNames(r){ return (r.typeIds||[]).map(id=>{const t=getMealType(id); return t?t.name:null;}).filter(Boolean); }
+function getOrCreateMealBase(name){
+  let b = state.mealBases.find(b=>b.name.toLowerCase()===name.toLowerCase());
+  if(!b){ b = {id:uid(), name, weeklyTarget:0}; state.mealBases.push(b); }
+  return b;
 }
+function getOrCreateMealType(name){
+  let t = state.mealTypes.find(t=>t.name.toLowerCase()===name.toLowerCase());
+  if(!t){ t = {id:uid(), name, weeklyMin:0, slotPref:null}; state.mealTypes.push(t); }
+  return t;
+}
+function removeIfEphemeral(r){
+  if(r.ephemeral){ state.recipes = state.recipes.filter(x=>x.id!==r.id); }
+}
+function freqLabel(r){
+  const parts = [];
+  parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'weekly ok' : `every ${r.frequencyWeeks} wks`);
+  if(r.multiply) parts.push('may repeat');
+  return parts.join(' \u00b7 ');
+}
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function parseList(text){ return (text||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean); }
 
-/* ================= RENDER: ROOT ================= */
+/* ============================================================
+   VIEW STATE
+   ============================================================ */
+let view = 'home';
+let viewWeekStart = state.lastViewedWeekStart || mondayOnOrBefore(todayISO());
+let currentSlotDate = null, currentSlotMeal = null;
+
 function render(){
   const app = document.getElementById('app');
   app.innerHTML = view==='home' ? renderHome() : renderSettings();
   attachHomeHandlers();
 }
 
-/* ================= HOME ================= */
+/* ============================================================
+   HOME
+   ============================================================ */
 function renderHome(){
   const days = weekDates(viewWeekStart);
   const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
@@ -332,7 +367,7 @@ function renderHome(){
     </div>
     <div class="plan-row">
       <button class="stamp-btn" onclick="openWizard()">Plan meals
-        <span class="sub">start day, days you're out, freezer, new recipes</span>
+        <span class="sub">start day, days out, cravings, freezer, new</span>
       </button>
       <button class="dl-btn" onclick="downloadWeekPdf()" aria-label="Download this week as PDF" title="Download this week as PDF">⬇</button>
     </div>
@@ -353,9 +388,10 @@ function renderMealRow(date, meal, slot){
   if(slot.status==='out'){
     inner = `<div class="slot out">Out — no meal needed</div>`;
   } else if(slot.status==='planned' && (slot.recipeName || (slot.recipeId && getRecipe(slot.recipeId)))){
-    const name = slot.recipeName || getRecipe(slot.recipeId).name;
-    const catName = slot.categoryName || (slot.recipeId && getRecipe(slot.recipeId) ? (getCategory(getRecipe(slot.recipeId).categoryId)||{}).name : '');
-    inner = `<div class="slot planned"><span class="rname">${escapeHtml(name)}</span><span class="rcat">${escapeHtml(catName||'')}</span></div>`;
+    const recipe = slot.recipeId ? getRecipe(slot.recipeId) : null;
+    const name = slot.recipeName || (recipe ? recipe.name : '');
+    const baseTxt = slot.baseLabel || (recipe ? baseNames(recipe).join(', ') : '');
+    inner = `<div class="slot planned"><span class="rname">${escapeHtml(name)}</span><span class="rcat">${escapeHtml(baseTxt||'')}</span></div>`;
   } else {
     inner = `<div class="slot empty">+ add meal</div>`;
   }
@@ -364,8 +400,6 @@ function renderMealRow(date, meal, slot){
   </div>`;
 }
 
-function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-
 function shiftWeek(n){
   viewWeekStart = addDays(viewWeekStart, n);
   state.lastViewedWeekStart = viewWeekStart;
@@ -373,7 +407,674 @@ function shiftWeek(n){
   render();
 }
 
-/* ---------- PDF export ---------- */
+function attachHomeHandlers(){
+  const wrap = document.getElementById('weekWrap');
+  if(!wrap) return;
+  let sx=0, sy=0, dragging=false;
+  wrap.addEventListener('touchstart', e=>{
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
+  }, {passive:true});
+  wrap.addEventListener('touchend', e=>{
+    if(!dragging) return; dragging=false;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
+      shiftWeek(dx < 0 ? 7 : -7);
+    }
+  }, {passive:true});
+}
+
+/* ============================================================
+   SLOT EDITOR (tap a meal on Home)
+   ============================================================ */
+function openSlotEditor(date, meal){
+  ensureWeek(viewWeekStart);
+  currentSlotDate = date; currentSlotMeal = meal;
+
+  const shown = new Set();
+  const baseSections = state.mealBases.map(b=>{
+    const recs = state.recipes.filter(r=>!r.ephemeral && (r.baseIds||[]).includes(b.id));
+    if(!recs.length) return '';
+    recs.forEach(r=>shown.add(r.id));
+    return `<div class="picker-cat"><h4>${escapeHtml(b.name)}</h4>${recs.map(r=>`
+      <div class="picker-opt" onclick="assignSlot('${date}','${meal}','${r.id}')">
+        <span>${escapeHtml(r.name)}</span>
+        <span class="meta">${escapeHtml(typeNames(r).join(', ')) || freqLabel(r)}</span>
+      </div>`).join('')}</div>`;
+  }).join('');
+  const other = state.recipes.filter(r=>!r.ephemeral && !shown.has(r.id));
+  const otherSection = other.length ? `<div class="picker-cat"><h4>Other</h4>${other.map(r=>`
+      <div class="picker-opt" onclick="assignSlot('${date}','${meal}','${r.id}')">
+        <span>${escapeHtml(r.name)}</span>
+        <span class="meta">${escapeHtml(typeNames(r).join(', ')) || freqLabel(r)}</span>
+      </div>`).join('')}</div>` : '';
+  const noneMsg = (!baseSections && !otherSection) ? `<p class="desc">No recipes yet — add one below.</p>` : '';
+
+  const baseChips = state.mealBases.map(b=>`<button type="button" class="chip" data-id="${b.id}" onclick="toggleQaBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('')
+    + `<button type="button" class="chip" style="border-style:dashed;" onclick="qaNewBase()">+ new base</button>`;
+  const typeChips = state.mealTypes.map(t=>`<button type="button" class="chip type-chip" data-id="${t.id}" onclick="toggleQaType('${t.id}')">${escapeHtml(t.name)}</button>`).join('')
+    + `<button type="button" class="chip type-chip" style="border-style:dashed;" onclick="qaNewType()">+ new type</button>`;
+
+  window.__qaDraft = { baseIds:[], typeIds:[] };
+
+  showOverlay(`
+    <h2>${dayName(date)} · ${meal}</h2>
+    <p class="desc">${dayShort(date)}</p>
+    <div class="btnrow" style="margin-top:0;margin-bottom:16px;">
+      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
+      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
+    </div>
+    ${baseSections}${otherSection}${noneMsg}
+    <div class="picker-cat">
+      <h4>Add a new recipe</h4>
+      <input type="text" id="qaName" placeholder="Recipe name" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--paper-line);font-size:14px;margin-bottom:10px;">
+      <div class="chip-group" style="margin-bottom:8px;" id="qaBaseChips">${baseChips}</div>
+      <div class="chip-group" id="qaTypeChips">${typeChips}</div>
+      <button class="btn primary small" style="width:100%;margin-top:10px;" onclick="quickAdd('${date}','${meal}')">Add &amp; use for this meal</button>
+    </div>
+  `);
+}
+function toggleQaBase(id){
+  const d = window.__qaDraft; const i = d.baseIds.indexOf(id);
+  if(i===-1) d.baseIds.push(id); else d.baseIds.splice(i,1);
+  const el = document.querySelector(`#qaBaseChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function toggleQaType(id){
+  const d = window.__qaDraft; const i = d.typeIds.indexOf(id);
+  if(i===-1) d.typeIds.push(id); else d.typeIds.splice(i,1);
+  const el = document.querySelector(`#qaTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function qaNewBase(){
+  const name = prompt('New meal base name:');
+  if(!name || !name.trim()) return;
+  const typedName = (document.getElementById('qaName')||{}).value || '';
+  const b = getOrCreateMealBase(name.trim());
+  const keep = window.__qaDraft;
+  openSlotEditor(currentSlotDate, currentSlotMeal);
+  window.__qaDraft.baseIds = [...keep.baseIds, b.id];
+  const el = document.querySelector(`#qaBaseChips [data-id="${b.id}"]`); if(el) el.classList.add('active');
+  const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+}
+function qaNewType(){
+  const name = prompt('New meal type name:');
+  if(!name || !name.trim()) return;
+  const typedName = (document.getElementById('qaName')||{}).value || '';
+  const t = getOrCreateMealType(name.trim());
+  const keep = window.__qaDraft;
+  openSlotEditor(currentSlotDate, currentSlotMeal);
+  window.__qaDraft.typeIds = [...keep.typeIds, t.id];
+  const el = document.querySelector(`#qaTypeChips [data-id="${t.id}"]`); if(el) el.classList.add('active');
+  const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+}
+function quickAdd(date, meal){
+  const nameEl = document.getElementById('qaName');
+  const name = nameEl.value.trim();
+  if(!name){ nameEl.focus(); return; }
+  const d = window.__qaDraft;
+  const recipe = {id:uid(), name, baseIds:[...d.baseIds], typeIds:[...d.typeIds], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+  state.recipes.push(recipe);
+  assignSlot(date, meal, recipe.id);
+}
+function assignSlot(date, meal, recipeId, forceStatus){
+  const weekObj = ensureWeek(viewWeekStart);
+  const day = weekObj.days.find(d=>d.date===date);
+  if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null}; }
+  else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
+  else {
+    const r = getRecipe(recipeId);
+    day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (baseNames(r).join(', ')||null) : null};
+    if(r){ r.lastUsedWeekStart = viewWeekStart; removeIfEphemeral(r); }
+  }
+  saveState();
+  closeOverlay();
+  render();
+}
+
+/* ============================================================
+   WIZARD: Plan meals
+   ============================================================ */
+let wizard = { startDate:null, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+function openWizard(){
+  wizard = { startDate: viewWeekStart, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+  renderWizardStep1();
+}
+function dots(n,total){
+  let s='<div class="steps-dots">';
+  for(let i=0;i<total;i++) s+= `<span class="${i<n?'active':''}"></span>`;
+  return s+'</div>';
+}
+function renderWizardStep1(){
+  showOverlay(`
+    ${dots(1,5)}
+    <h2>Plan meals</h2>
+    <p class="desc">What day are you planning from?</p>
+    <div class="field">
+      <label>Start date</label>
+      <input type="date" id="wizDate" value="${wizard.startDate}">
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" onclick="wizardStep2()">Next</button>
+    </div>
+  `);
+}
+function wizardStep2(){
+  const val = document.getElementById('wizDate').value;
+  if(val) wizard.startDate = val;
+  const days = weekDates(wizard.startDate);
+  const rows = days.map(date=>['lunch','dinner'].map(meal=>{
+    const key = date+'_'+meal;
+    const checked = wizard.skips[key] ? 'checked' : '';
+    return `<div class="crow">
+      <span class="cname">${dayName(date)} ${meal}<small>${dayShort(date)}</small></span>
+      <input type="checkbox" data-key="${key}" ${checked} onchange="toggleSkip('${key}')">
+    </div>`;
+  }).join('')).join('');
+
+  showOverlay(`
+    ${dots(2,5)}
+    <h2>Any meals you'll be out?</h2>
+    <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
+    <div class="checklist">${rows}</div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="renderWizardStep1()">Back</button>
+      <button class="btn primary" onclick="wizardStep3()">Next</button>
+    </div>
+  `);
+}
+function toggleSkip(key){ wizard.skips[key] = !wizard.skips[key]; }
+
+function wizardStep3(){
+  const chips = state.mealBases.map(b=>`<button type="button" class="chip ${wizard.fancyBaseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleFancyBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
+  showOverlay(`
+    ${dots(3,5)}
+    <h2>What are you fancying this week?</h2>
+    <p class="desc">Tick any meal bases you want this week to lean on. Leave blank to just use your usual weekly targets from Settings.</p>
+    <div class="chip-group">${chips || '<p class="desc">No meal bases yet — add some in Settings.</p>'}</div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep2()">Back</button>
+      <button class="btn primary" onclick="wizardStep4()">Next</button>
+    </div>
+  `);
+}
+function toggleFancyBase(id){
+  const i = wizard.fancyBaseIds.indexOf(id);
+  if(i===-1) wizard.fancyBaseIds.push(id); else wizard.fancyBaseIds.splice(i,1);
+  const el = document.querySelector(`.chip[data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+
+function wizardStep4(){
+  showOverlay(`
+    ${dots(4,5)}
+    <h2>What's in the freezer?</h2>
+    <p class="desc">List anything you want worked into this week — one per line or separated by commas. Leave blank to skip.</p>
+    <div class="field">
+      <textarea id="wizFreezer" rows="4" placeholder="e.g. chicken thighs, beef mince, salmon fillets">${escapeHtml(wizard.freezerText)}</textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep3()">Back</button>
+      <button class="btn primary" onclick="wizardStep5()">Next</button>
+    </div>
+  `);
+}
+function wizardStep5(){
+  wizard.freezerText = document.getElementById('wizFreezer').value;
+  showOverlay(`
+    ${dots(5,5)}
+    <h2>Cooking anything new?</h2>
+    <p class="desc">List any new recipes you want to try this week — one per line or separated by commas. Leave blank to skip.</p>
+    <div class="field">
+      <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep4()">Back</button>
+      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
+    </div>
+  `);
+}
+
+/* ============================================================
+   PLAN GENERATION
+   ============================================================ */
+function generatePlan(){
+  wizard.newText = document.getElementById('wizNew').value;
+  const startISO = wizard.startDate;
+  const days = weekDates(startISO);
+  const existing = state.weeks[startISO];
+  const hasContent = existing && existing.days.some(d=>d.lunch.status!=='empty'||d.dinner.status!=='empty');
+  if(hasContent && !confirm('This week already has a plan. Replace it?')) return;
+
+  const weekObj = { startDate:startISO, days: days.map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
+
+  const slotOrder = [];
+  days.forEach(date=>{
+    ['lunch','dinner'].forEach(meal=>{
+      const key = date+'_'+meal;
+      const day = weekObj.days.find(d=>d.date===date);
+      if(wizard.skips[key]) day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null};
+      else slotOrder.push({date,meal});
+    });
+  });
+
+  // ---- priority items: freezer + new-to-try go straight into the first slots ----
+  const priorityPool = [];
+  const freezerItems = parseList(wizard.freezerText);
+  if(freezerItems.length){
+    const freezerType = getOrCreateMealType('Freezer');
+    freezerItems.forEach(name=>{
+      const r = {id:uid(), name, baseIds:[], typeIds:[freezerType.id], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:true};
+      state.recipes.push(r);
+      priorityPool.push(r);
+    });
+  }
+  const newItems = parseList(wizard.newText);
+  if(newItems.length){
+    const newType = getOrCreateMealType('New');
+    newItems.forEach(name=>{
+      const r = {id:uid(), name, baseIds:[], typeIds:[newType.id], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+      state.recipes.push(r);
+      priorityPool.push(r);
+    });
+  }
+
+  const usedIds = new Set(priorityPool.map(r=>r.id));
+  const priorityCount = Math.min(priorityPool.length, slotOrder.length);
+  for(let i=0;i<priorityCount;i++){
+    const r = priorityPool[i];
+    const day = weekObj.days.find(d=>d.date===slotOrder[i].date);
+    day[slotOrder[i].meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+    r.lastUsedWeekStart = startISO;
+  }
+  priorityPool.slice(0,priorityCount).forEach(r=>removeIfEphemeral(r));
+  const remainingSlots = slotOrder.slice(priorityCount);
+
+  if(remainingSlots.length){
+    const fancy = wizard.fancyBaseIds || [];
+    let candidates = state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral);
+    candidates = candidates.filter(r=>{
+      const freq = r.frequencyWeeks || 1;
+      if(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, startISO) < freq) return false;
+      if(fancy.length && !(r.baseIds||[]).some(id=>fancy.includes(id))) return false;
+      return true;
+    });
+    candidates.sort((a,b)=>{
+      const av=a.lastUsedWeekStart||'0000-00-00', bv=b.lastUsedWeekStart||'0000-00-00';
+      if(av===bv) return Math.random()-0.5;
+      return av<bv?-1:1;
+    });
+
+    const copiesFor = new Map();
+    function decideCopies(r){
+      if(copiesFor.has(r.id)) return copiesFor.get(r.id);
+      const c = r.multiply ? (Math.random()<0.5?2:3) : 1;
+      copiesFor.set(r.id, c);
+      return c;
+    }
+
+    const selected = [], selectedIds = new Set();
+    let unitsUsed = 0;
+    const baseCounts = {}, typeCounts = {};
+    function tryAdd(r){
+      if(selectedIds.has(r.id) || unitsUsed>=remainingSlots.length) return false;
+      const copies = decideCopies(r);
+      selected.push(r); selectedIds.add(r.id); unitsUsed += copies;
+      (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+1);
+      (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+1);
+      return true;
+    }
+
+    // pass 1: meet meal-type weekly minimums (global rule)
+    state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
+      let guard=0;
+      while((typeCounts[t.id]||0) < t.weeklyMin && guard<50){
+        guard++;
+        const c = candidates.find(r=>!selectedIds.has(r.id) && (r.typeIds||[]).includes(t.id));
+        if(!c || !tryAdd(c)) break;
+      }
+    });
+    // pass 2: meet meal-base weekly targets (global rule)
+    state.mealBases.filter(b=>b.weeklyTarget>0).forEach(b=>{
+      let guard=0;
+      while((baseCounts[b.id]||0) < b.weeklyTarget && guard<50){
+        guard++;
+        const c = candidates.find(r=>!selectedIds.has(r.id) && (r.baseIds||[]).includes(b.id));
+        if(!c || !tryAdd(c)) break;
+      }
+    });
+    // pass 3: fill whatever's left with the next-in-rotation candidates
+    for(const r of candidates){
+      if(unitsUsed>=remainingSlots.length) break;
+      tryAdd(r);
+    }
+
+    // expand selections into slot copies according to "can repeat"
+    const pool = [];
+    selected.forEach(r=>{
+      const copies = decideCopies(r);
+      for(let k=0;k<copies;k++) pool.push(r);
+    });
+
+    // soft preference: a recipe tagged "prefers lunch/dinner" gets first refusal on that slot type
+    function prefersSlot(r, mealType){
+      return (r.typeIds||[]).some(id=>{
+        const t = getMealType(id);
+        return t && t.slotPref === mealType;
+      });
+    }
+    const queue = pool.slice();
+    remainingSlots.forEach(slot=>{
+      if(!queue.length) return;
+      let idx = queue.findIndex(r=>prefersSlot(r, slot.meal));
+      if(idx===-1) idx = 0;
+      const [r] = queue.splice(idx,1);
+      const day = weekObj.days.find(d=>d.date===slot.date);
+      day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+      r.lastUsedWeekStart = startISO;
+    });
+  }
+
+  state.weeks[startISO] = weekObj;
+  state.lastViewedWeekStart = startISO;
+  viewWeekStart = startISO;
+  saveState();
+  closeOverlay();
+  render();
+
+  const filledCount = weekObj.days.reduce((n,d)=>n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0),0);
+  toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Week planned');
+}
+
+/* ============================================================
+   OVERLAY (modal)
+   ============================================================ */
+function showOverlay(html){
+  document.getElementById('overlayRoot').innerHTML = `
+    <div class="overlay" onclick="if(event.target===this)closeOverlay()">
+      <div class="modal">${html}</div>
+    </div>`;
+}
+function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function openSettings(){ view='settings'; render(); }
+function backHome(){ view='home'; render(); }
+
+function renderSettings(){
+  return `
+    <div class="topbar">
+      <button class="iconbtn" onclick="backHome()" aria-label="Back">‹</button>
+      <div class="brand" style="align-items:flex-end;">
+        <span class="kicker">rules &amp; recipes</span>
+        <h1 style="font-size:22px;">Settings</h1>
+      </div>
+    </div>
+    <div class="settings-wrap">
+      ${renderMealBasesSection()}
+      ${renderMealTypesSection()}
+      ${renderRecipesSection()}
+      <div class="backup-row">
+        <button class="btn small" onclick="exportData()">Export backup</button>
+        <button class="btn small" onclick="document.getElementById('fileimport').click()">Import backup</button>
+      </div>
+      <input type="file" id="fileimport" accept="application/json" onchange="importData(event)">
+      <p class="hint">Data is stored locally in this browser only.</p>
+    </div>
+  `;
+}
+
+/* ---- meal bases ---- */
+function renderMealBasesSection(){
+  const rows = state.mealBases.map(b=>`
+    <div class="rule-row">
+      <input type="text" value="${escapeHtml(b.name)}" onchange="renameMealBase('${b.id}',this.value)">
+      <div class="target-stepper">
+        <button onclick="bumpBaseTarget('${b.id}',-1)">–</button>
+        <span class="tval">${b.weeklyTarget}/wk</span>
+        <button onclick="bumpBaseTarget('${b.id}',1)">+</button>
+      </div>
+      <button class="del-x" onclick="deleteMealBase('${b.id}')">✕</button>
+    </div>`).join('');
+  return `
+    <div class="cat-card">
+      <h3 class="section-title">Meal bases</h3>
+      <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. The weekly target is a global rule for how many times it should show up each week.</p>
+      ${rows || '<p class="hint">No meal bases yet.</p>'}
+      <div class="add-cat-form">
+        <input type="text" id="newBaseName" placeholder="e.g. Couscous">
+        <button onclick="addMealBase()">Add</button>
+      </div>
+    </div>`;
+}
+function addMealBase(){
+  const input = document.getElementById('newBaseName');
+  const name = input.value.trim();
+  if(!name) return;
+  state.mealBases.push({id:uid(), name, weeklyTarget:1});
+  saveState(); render();
+}
+function renameMealBase(id, name){
+  const b = getMealBase(id); if(b){ b.name = name.trim()||b.name; saveState(); }
+}
+function bumpBaseTarget(id, delta){
+  const b = getMealBase(id); b.weeklyTarget = Math.max(0,(b.weeklyTarget||0)+delta);
+  saveState(); render();
+}
+function deleteMealBase(id){
+  if(!confirm('Delete this meal base? Recipes using it will just lose that tag.')) return;
+  state.mealBases = state.mealBases.filter(b=>b.id!==id);
+  state.recipes.forEach(r=>{ r.baseIds = (r.baseIds||[]).filter(bid=>bid!==id); });
+  saveState(); render();
+}
+
+/* ---- meal types ---- */
+function renderMealTypesSection(){
+  const rows = state.mealTypes.map(t=>`
+    <div class="rule-row">
+      <input type="text" value="${escapeHtml(t.name)}" onchange="renameMealType('${t.id}',this.value)">
+      <div class="target-stepper">
+        <button onclick="bumpTypeMin('${t.id}',-1)">–</button>
+        <span class="tval">min ${t.weeklyMin}/wk</span>
+        <button onclick="bumpTypeMin('${t.id}',1)">+</button>
+      </div>
+      <select onchange="setTypeSlotPref('${t.id}',this.value)">
+        <option value="" ${!t.slotPref?'selected':''}>no slot pref</option>
+        <option value="lunch" ${t.slotPref==='lunch'?'selected':''}>prefers lunch</option>
+        <option value="dinner" ${t.slotPref==='dinner'?'selected':''}>prefers dinner</option>
+      </select>
+      <button class="del-x" onclick="deleteMealType('${t.id}')">✕</button>
+    </div>`).join('');
+  return `
+    <div class="cat-card">
+      <h3 class="section-title">Meal types</h3>
+      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule.</p>
+      ${rows || '<p class="hint">No meal types yet.</p>'}
+      <div class="add-cat-form">
+        <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
+        <button onclick="addMealType()">Add</button>
+      </div>
+    </div>`;
+}
+function addMealType(){
+  const input = document.getElementById('newTypeName');
+  const name = input.value.trim();
+  if(!name) return;
+  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null});
+  saveState(); render();
+}
+function renameMealType(id, name){
+  const t = getMealType(id); if(t){ t.name = name.trim()||t.name; saveState(); }
+}
+function bumpTypeMin(id, delta){
+  const t = getMealType(id); t.weeklyMin = Math.max(0,(t.weeklyMin||0)+delta);
+  saveState(); render();
+}
+function setTypeSlotPref(id, val){
+  const t = getMealType(id); if(t){ t.slotPref = val || null; saveState(); }
+}
+function deleteMealType(id){
+  if(!confirm('Delete this meal type? Recipes using it will just lose that tag.')) return;
+  state.mealTypes = state.mealTypes.filter(t=>t.id!==id);
+  state.recipes.forEach(r=>{ r.typeIds = (r.typeIds||[]).filter(tid=>tid!==id); });
+  saveState(); render();
+}
+
+/* ---- recipes (flat list + editor modal) ---- */
+function renderRecipesSection(){
+  const rows = state.recipes.filter(r=>!r.ephemeral).map(r=>{
+    const bases = baseNames(r).join(', ') || 'no base yet';
+    const types = typeNames(r).join(', ');
+    return `
+    <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
+      <div class="rinfo">
+        <div class="rn">${escapeHtml(r.name)}</div>
+        <div class="rmeta">${escapeHtml(bases)}${types?' · '+escapeHtml(types):''} · ${freqLabel(r)}</div>
+      </div>
+      <span class="chev">›</span>
+    </div>`;
+  }).join('');
+  return `
+    <div class="cat-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+        <h3 class="section-title" style="margin:0;">Recipes</h3>
+        <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
+      </div>
+      <p class="section-desc">Tap a recipe to edit its bases, types, and rotation.</p>
+      ${rows || '<p class="hint">No recipes yet — add your first one.</p>'}
+    </div>`;
+}
+
+let editingRecipeId = null;
+function openRecipeEditor(id){
+  editingRecipeId = id;
+  const r = id ? getRecipe(id) : {name:'', baseIds:[], typeIds:[], frequencyWeeks:1, multiply:false};
+  window.__editorDraft = { baseIds:[...(r.baseIds||[])], typeIds:[...(r.typeIds||[])] };
+
+  const baseChips = state.mealBases.map(b=>`<button type="button" class="chip ${(r.baseIds||[]).includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleEditorBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('')
+    + `<button type="button" class="chip" style="border-style:dashed;" onclick="editorNewBase()">+ new</button>`;
+  const typeChips = state.mealTypes.map(t=>`<button type="button" class="chip type-chip ${(r.typeIds||[]).includes(t.id)?'active':''}" data-id="${t.id}" onclick="toggleEditorType('${t.id}')">${escapeHtml(t.name)}</button>`).join('')
+    + `<button type="button" class="chip type-chip" style="border-style:dashed;" onclick="editorNewType()">+ new</button>`;
+
+  showOverlay(`
+    <h2>${id?'Edit recipe':'Add a recipe'}</h2>
+    <div class="field">
+      <label>Name</label>
+      <input type="text" id="editRecipeName" value="${escapeHtml(r.name)}" placeholder="e.g. Chicken traybake">
+    </div>
+    <div class="field">
+      <label>Meal base — pick any that apply</label>
+      <div class="chip-group" id="editBaseChips">${baseChips}</div>
+    </div>
+    <div class="field">
+      <label>Meal type — pick any that apply</label>
+      <div class="chip-group" id="editTypeChips">${typeChips}</div>
+    </div>
+    <div class="field">
+      <label>How often can it repeat across weeks?</label>
+      <select id="editRecipeFreq">
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(r.frequencyWeeks||1)===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
+      <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" id="editRecipeMultiply" ${r.multiply?'checked':''}>
+      can repeat 2-3x in the same week
+    </label>
+    <div class="btnrow">
+      ${id?`<button class="btn danger" onclick="deleteRecipeFromEditor('${id}')">Delete</button>`:`<button class="btn ghost" onclick="closeOverlay()">Cancel</button>`}
+      <button class="btn primary" onclick="saveRecipeFromEditor()">Save</button>
+    </div>
+  `);
+}
+function toggleEditorBase(id){
+  const d = window.__editorDraft; const i = d.baseIds.indexOf(id);
+  if(i===-1) d.baseIds.push(id); else d.baseIds.splice(i,1);
+  const el = document.querySelector(`#editBaseChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function toggleEditorType(id){
+  const d = window.__editorDraft; const i = d.typeIds.indexOf(id);
+  if(i===-1) d.typeIds.push(id); else d.typeIds.splice(i,1);
+  const el = document.querySelector(`#editTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function editorNewBase(){
+  const name = prompt('New meal base name:');
+  if(!name || !name.trim()) return;
+  const b = getOrCreateMealBase(name.trim());
+  window.__editorDraft.baseIds.push(b.id);
+  reopenRecipeEditorPreservingName();
+}
+function editorNewType(){
+  const name = prompt('New meal type name:');
+  if(!name || !name.trim()) return;
+  const t = getOrCreateMealType(name.trim());
+  window.__editorDraft.typeIds.push(t.id);
+  reopenRecipeEditorPreservingName();
+}
+function reopenRecipeEditorPreservingName(){
+  const typedName = (document.getElementById('editRecipeName')||{}).value || '';
+  const keepDraft = window.__editorDraft;
+  openRecipeEditor(editingRecipeId);
+  window.__editorDraft = keepDraft;
+  keepDraft.baseIds.forEach(id=>{ const el=document.querySelector(`#editBaseChips [data-id="${id}"]`); if(el) el.classList.add('active'); });
+  keepDraft.typeIds.forEach(id=>{ const el=document.querySelector(`#editTypeChips [data-id="${id}"]`); if(el) el.classList.add('active'); });
+  const nameEl = document.getElementById('editRecipeName'); if(nameEl) nameEl.value = typedName;
+}
+function saveRecipeFromEditor(){
+  const name = document.getElementById('editRecipeName').value.trim();
+  if(!name) return;
+  const freq = parseInt(document.getElementById('editRecipeFreq').value,10)||1;
+  const multiply = document.getElementById('editRecipeMultiply').checked;
+  const d = window.__editorDraft;
+  if(editingRecipeId){
+    const r = getRecipe(editingRecipeId);
+    r.name=name; r.baseIds=d.baseIds; r.typeIds=d.typeIds; r.frequencyWeeks=freq; r.multiply=multiply;
+  } else {
+    state.recipes.push({id:uid(), name, baseIds:d.baseIds, typeIds:d.typeIds, frequencyWeeks:freq, multiply, lastUsedWeekStart:null, ephemeral:false});
+  }
+  saveState();
+  closeOverlay();
+  render();
+}
+function deleteRecipeFromEditor(id){
+  if(!confirm('Delete this recipe?')) return;
+  state.recipes = state.recipes.filter(r=>r.id!==id);
+  saveState();
+  closeOverlay();
+  render();
+}
+
+/* ============================================================
+   BACKUP
+   ============================================================ */
+function exportData(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'meal-plan-backup.json';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function importData(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data.mealBases || !data.mealTypes || !data.recipes || !data.weeks) throw new Error('bad file');
+      state = data;
+      saveState();
+      toast('Backup restored');
+      render();
+    }catch(e){ alert('Could not read that file.'); }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
+/* ============================================================
+   PDF EXPORT
+   ============================================================ */
 function downloadWeekPdf(){
   if(!window.jspdf){
     alert('The PDF library didn\'t load — check your internet connection and try again.');
@@ -409,7 +1110,6 @@ function downloadWeekPdf(){
 
   days.forEach((date,i)=>{
     const d = weekObj ? weekObj.days[i] : {lunch:emptySlot(), dinner:emptySlot()};
-
     if(y > pageHeight - 100){ doc.addPage(); y = 64; }
 
     doc.setFont('times','bold');
@@ -435,8 +1135,8 @@ function downloadWeekPdf(){
       else if(slot.status==='planned'){
         const recipe = slot.recipeId ? getRecipe(slot.recipeId) : null;
         const name = slot.recipeName || (recipe ? recipe.name : '');
-        const catName = slot.categoryName || (recipe ? (getCategory(recipe.categoryId)||{}).name : '');
-        label = name ? (name + (catName ? `  (${catName})` : '')) : 'Not planned';
+        const baseTxt = slot.baseLabel || (recipe ? baseNames(recipe).join(', ') : '');
+        label = name ? (name + (baseTxt ? `  (${baseTxt})` : '')) : 'Not planned';
         if(!name) italic = true;
       } else { label = 'Not planned'; italic=true; }
 
@@ -460,477 +1160,6 @@ function downloadWeekPdf(){
   doc.text('Meal Plan', margin, pageHeight-30);
 
   doc.save(`meal-plan-${viewWeekStart}.pdf`);
-}
-
-function attachHomeHandlers(){
-  const wrap = document.getElementById('weekWrap');
-  if(!wrap) return;
-  let sx=0, sy=0, dragging=false;
-  wrap.addEventListener('touchstart', e=>{
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
-  }, {passive:true});
-  wrap.addEventListener('touchend', e=>{
-    if(!dragging) return; dragging=false;
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
-    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
-      shiftWeek(dx < 0 ? 7 : -7);
-    }
-  }, {passive:true});
-}
-
-/* ---------- slot editor ---------- */
-function openSlotEditor(date, meal){
-  ensureWeek(viewWeekStart);
-  const weekObj = state.weeks[viewWeekStart];
-  const dayIdx = weekObj.days.findIndex(d=>d.date===date);
-  const slot = weekObj.days[dayIdx][meal];
-
-  const catsHtml = state.categories.map(c=>{
-    const recs = state.recipes.filter(r=>r.categoryId===c.id);
-    if(!recs.length) return '';
-    return `<div class="picker-cat"><h4>${escapeHtml(c.name)}</h4>${recs.map(r=>`
-      <div class="picker-opt" onclick="assignSlot('${date}','${meal}','${r.id}')">
-        <span>${escapeHtml(r.name)}</span>
-        <span class="meta">${freqLabel(r)}</span>
-      </div>`).join('')}</div>`;
-  }).join('') || `<p class="desc">No recipes yet — add one below.</p>`;
-
-  const catOptions = state.categories.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
-
-  showOverlay(`
-    <h2>${dayName(date)} · ${meal}</h2>
-    <p class="desc">${dayShort(date)}</p>
-    <div class="btnrow" style="margin-top:0;margin-bottom:16px;">
-      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
-      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
-    </div>
-    ${catsHtml}
-    <div class="picker-cat">
-      <h4>Add a new recipe</h4>
-      <div class="quick-add">
-        <select id="qaCat">
-          ${catOptions}
-          <option value="__new__">+ New category…</option>
-        </select>
-        <input type="text" id="qaName" placeholder="Recipe name">
-      </div>
-      <button class="btn primary small" style="width:100%;margin-top:8px;" onclick="quickAdd('${date}','${meal}')">Add &amp; use for this meal</button>
-    </div>
-  `);
-}
-function quickAdd(date, meal){
-  const nameEl = document.getElementById('qaName');
-  const catEl = document.getElementById('qaCat');
-  const name = nameEl.value.trim();
-  if(!name){ nameEl.focus(); return; }
-  let categoryId = catEl.value;
-  if(categoryId === '__new__'){
-    const catName = prompt('New category name:');
-    if(!catName || !catName.trim()) return;
-    const newCat = {id:uid(), name:catName.trim(), weeklyTarget:2};
-    state.categories.push(newCat);
-    categoryId = newCat.id;
-  }
-  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null};
-  state.recipes.push(recipe);
-  assignSlot(date, meal, recipe.id);
-}
-function freqLabel(r){
-  const parts = [];
-  parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'weekly ok' : `every ${r.frequencyWeeks} wks`);
-  if(r.multiply) parts.push('may repeat');
-  return parts.join(' \u00b7 ');
-}
-function assignSlot(date, meal, recipeId, forceStatus){
-  const weekObj = ensureWeek(viewWeekStart);
-  const day = weekObj.days.find(d=>d.date===date);
-  if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, categoryName:null}; }
-  else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
-  else {
-    const r = getRecipe(recipeId);
-    const cat = r ? getCategory(r.categoryId) : null;
-    day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, categoryName: cat?cat.name:null};
-    if(r){
-      r.lastUsedWeekStart = viewWeekStart;
-      removeIfFreezer(r);
-    }
-  }
-  saveState();
-  closeOverlay();
-  render();
-}
-function removeIfFreezer(r){
-  const cat = getCategory(r.categoryId);
-  if(cat && cat.name.trim().toLowerCase()==='freezer'){
-    state.recipes = state.recipes.filter(x=>x.id!==r.id);
-  }
-}
-
-/* ================= WIZARD ================= */
-let wizard = { startDate:null, skips:{}, freezerText:'', newText:'' };
-function openWizard(){
-  wizard = { startDate: viewWeekStart, skips:{}, freezerText:'', newText:'' };
-  renderWizardStep1();
-}
-function renderWizardStep1(){
-  showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span></span><span></span><span></span></div>
-    <h2>Plan meals</h2>
-    <p class="desc">What day are you planning from?</p>
-    <div class="field">
-      <label>Start date</label>
-      <input type="date" id="wizDate" value="${wizard.startDate}">
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
-      <button class="btn primary" onclick="wizardStep2()">Next</button>
-    </div>
-  `);
-}
-function wizardStep2(){
-  const val = document.getElementById('wizDate').value;
-  if(val) wizard.startDate = val;
-  const days = weekDates(wizard.startDate);
-  const rows = days.map(date=>['lunch','dinner'].map(meal=>{
-    const key = date+'_'+meal;
-    const checked = wizard.skips[key] ? 'checked' : '';
-    return `<div class="crow">
-      <span class="cname">${dayName(date)} ${meal}<small>${dayShort(date)}</small></span>
-      <input type="checkbox" data-key="${key}" ${checked} onchange="toggleSkip('${key}')">
-    </div>`;
-  }).join('')).join('');
-
-  showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span class="active"></span><span></span><span></span></div>
-    <h2>Any meals you'll be out?</h2>
-    <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
-    <div class="checklist">${rows}</div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="renderWizardStep1()">Back</button>
-      <button class="btn primary" onclick="wizardStep3()">Next</button>
-    </div>
-  `);
-}
-function toggleSkip(key){
-  wizard.skips[key] = !wizard.skips[key];
-}
-function wizardStep3(){
-  showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span class="active"></span><span class="active"></span><span></span></div>
-    <h2>What's in the freezer?</h2>
-    <p class="desc">List anything you want worked into this week — one per line or separated by commas. Leave blank to skip.</p>
-    <div class="field">
-      <textarea id="wizFreezer" rows="4" placeholder="e.g. chicken thighs, beef mince, salmon fillets">${escapeHtml(wizard.freezerText)}</textarea>
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep2()">Back</button>
-      <button class="btn primary" onclick="wizardStep4()">Next</button>
-    </div>
-  `);
-}
-function wizardStep4(){
-  wizard.freezerText = document.getElementById('wizFreezer').value;
-  showOverlay(`
-    <div class="steps-dots"><span class="active"></span><span class="active"></span><span class="active"></span><span class="active"></span></div>
-    <h2>Cooking anything new?</h2>
-    <p class="desc">List any new recipes you want to try this week — one per line or separated by commas. These get added to a New category. Leave blank to skip.</p>
-    <div class="field">
-      <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep3()">Back</button>
-      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
-    </div>
-  `);
-}
-function parseList(text){
-  return (text||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean);
-}
-function getOrCreateCategory(name, defaultTarget){
-  let cat = state.categories.find(c=>c.name.toLowerCase()===name.toLowerCase());
-  if(!cat){
-    cat = {id:uid(), name, weeklyTarget: defaultTarget};
-    state.categories.push(cat);
-  }
-  return cat;
-}
-function getOrCreateRecipeInCategory(name, categoryId){
-  let r = state.recipes.find(r=>r.categoryId===categoryId && r.name.toLowerCase()===name.toLowerCase());
-  if(!r){
-    r = {id:uid(), categoryId, name, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null};
-    state.recipes.push(r);
-  }
-  return r;
-}
-
-function generatePlan(){
-  wizard.newText = document.getElementById('wizNew').value;
-  const startISO = wizard.startDate;
-  const days = weekDates(startISO);
-  const existing = state.weeks[startISO];
-  const hasContent = existing && existing.days.some(d=>d.lunch.status!=='empty'||d.dinner.status!=='empty');
-  if(hasContent && !confirm('This week already has a plan. Replace it?')) return;
-
-  const weekObj = { startDate:startISO, days: days.map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
-
-  // mark skips as 'out'
-  const slotOrder = [];
-  days.forEach(date=>{
-    ['lunch','dinner'].forEach(meal=>{
-      const key = date+'_'+meal;
-      const day = weekObj.days.find(d=>d.date===date);
-      if(wizard.skips[key]) day[meal] = {status:'out', recipeId:null};
-      else slotOrder.push({date,meal});
-    });
-  });
-
-  // freezer items + new-to-try items get worked in first, as priority picks
-  const priorityPool = [];
-  const freezerItems = parseList(wizard.freezerText);
-  if(freezerItems.length){
-    const freezerCat = getOrCreateCategory('Freezer', 0);
-    freezerItems.forEach(name=> priorityPool.push(getOrCreateRecipeInCategory(name, freezerCat.id)));
-  }
-  const newItems = parseList(wizard.newText);
-  if(newItems.length){
-    const newCat = getOrCreateCategory('New', 0);
-    newItems.forEach(name=> priorityPool.push(getOrCreateRecipeInCategory(name, newCat.id)));
-  }
-
-  // build per-category eligible pools (excluding anything already used as a priority pick this week)
-  // weeklyTarget is a budget of meal-slots for the category. A recipe marked "can repeat"
-  // has the app decide (2 or 3 times) how often it lands this week, consuming that many slots
-  // so it never ends up shown just once.
-  const copiesFor = new Map();
-  function decideCopies(r){
-    if(copiesFor.has(r.id)) return copiesFor.get(r.id);
-    const c = r.multiply ? (Math.random()<0.5?2:3) : 1;
-    copiesFor.set(r.id, c);
-    return c;
-  }
-  const usedIds = new Set(priorityPool.map(r=>r.id));
-  const pools = state.categories.filter(c=>c.weeklyTarget>0).map(cat=>{
-    const recs = state.recipes.filter(r=>r.categoryId===cat.id && !usedIds.has(r.id));
-    const eligible = recs.filter(r=>{
-      if(!r.lastUsedWeekStart) return true;
-      const freq = r.frequencyWeeks || 1;
-      return weeksBetween(r.lastUsedWeekStart, startISO) >= freq;
-    });
-    // least-recently-used first, shuffle ties
-    eligible.sort((a,b)=>{
-      const av = a.lastUsedWeekStart || '0000-00-00';
-      const bv = b.lastUsedWeekStart || '0000-00-00';
-      if(av===bv) return Math.random()-0.5;
-      return av<bv?-1:1;
-    });
-    const picks = [];
-    let units = 0;
-    for(const r of eligible){
-      if(units >= cat.weeklyTarget) break;
-      picks.push(r);
-      units += decideCopies(r);
-    }
-    return { cat, picks };
-  });
-
-  // round-robin interleave category picks (distinct recipes, not yet expanded)
-  const categoryPool = [];
-  let more = true, idx = 0;
-  while(more){
-    more = false;
-    for(const p of pools){
-      if(idx < p.picks.length){ categoryPool.push(p.picks[idx]); more = true; }
-    }
-    idx++;
-  }
-
-  // priority picks (freezer + new) go first, then category picks fill the rest
-  const selectedDistinct = [...priorityPool, ...categoryPool];
-
-  // expand: a recipe marked "can repeat" fills 2-3 slots, so it's never shown just once
-  const pool = [];
-  selectedDistinct.forEach(r=>{
-    const copies = decideCopies(r);
-    for(let k=0;k<copies;k++) pool.push(r);
-  });
-
-  // assign to slots in order
-  slotOrder.forEach((s,i)=>{
-    if(i < pool.length){
-      const r = pool[i];
-      const cat = getCategory(r.categoryId);
-      const day = weekObj.days.find(d=>d.date===s.date);
-      day[s.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, categoryName: cat?cat.name:null};
-      r.lastUsedWeekStart = startISO;
-    }
-  });
-  // freezer items are used up once placed in the plan
-  pool.slice(0, slotOrder.length).forEach(r=>removeIfFreezer(r));
-
-  state.weeks[startISO] = weekObj;
-  state.lastViewedWeekStart = startISO;
-  viewWeekStart = startISO;
-  saveState();
-  closeOverlay();
-  render();
-  const filled = Math.min(pool.length, slotOrder.length);
-  toast(filled < slotOrder.length ? `Planned ${filled} of ${slotOrder.length} meals — fill the rest manually` : 'Week planned');
-}
-
-/* ================= OVERLAY (modal) ================= */
-function showOverlay(html){
-  document.getElementById('overlayRoot').innerHTML = `
-    <div class="overlay" onclick="if(event.target===this)closeOverlay()">
-      <div class="modal">${html}</div>
-    </div>`;
-}
-function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
-
-/* ================= SETTINGS ================= */
-function openSettings(){ view='settings'; render(); }
-function backHome(){ view='home'; render(); }
-
-function renderSettings(){
-  const catsHtml = state.categories.map(cat=>{
-    const recs = state.recipes.filter(r=>r.categoryId===cat.id);
-    const recRows = recs.map(r=>`
-      <div class="recipe-row">
-        <div class="rinfo">
-          <div class="rn">${escapeHtml(r.name)}</div>
-          <div class="rmeta">${r.lastUsedWeekStart ? 'last used '+dayShort(r.lastUsedWeekStart) : 'never used'}</div>
-        </div>
-        <div class="ractions">
-          <select onchange="setRecipeCategory('${r.id}',this.value)">
-            ${state.categories.map(c=>`<option value="${c.id}" ${c.id===r.categoryId?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
-          </select>
-          <select onchange="setRecipeFreq('${r.id}',this.value)">
-            ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${r.frequencyWeeks===n?'selected':''}>${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
-          </select>
-        </div>
-        <div class="ractions" style="margin-top:6px;">
-          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);flex:1;">
-            <input type="checkbox" style="width:16px;height:16px;accent-color:var(--brick);" ${r.multiply?'checked':''} onchange="setRecipeMultiply('${r.id}',this.checked)">
-            can repeat 2-3x in a week
-          </label>
-          <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
-        </div>
-      </div>`).join('');
-
-    return `
-      <div class="cat-card">
-        <div class="cat-head">
-          <input type="text" value="${escapeHtml(cat.name)}" onchange="renameCategory('${cat.id}',this.value)">
-          <div class="target-stepper">
-            <button onclick="bumpTarget('${cat.id}',-1)">–</button>
-            <span class="tval">${cat.weeklyTarget}/wk</span>
-            <button onclick="bumpTarget('${cat.id}',1)">+</button>
-          </div>
-          <button class="del-x" onclick="deleteCategory('${cat.id}')">✕</button>
-        </div>
-        ${recRows}
-        <div class="add-recipe-form">
-          <input type="text" placeholder="Add a recipe name" id="newrec_${cat.id}">
-          <select id="newrecfreq_${cat.id}">
-            ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}">${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
-          </select>
-          <button onclick="addRecipe('${cat.id}')">+</button>
-        </div>
-      </div>`;
-  }).join('');
-
-  return `
-    <div class="topbar">
-      <button class="iconbtn" onclick="backHome()" aria-label="Back">‹</button>
-      <div class="brand" style="align-items:flex-end;">
-        <span class="kicker">categories &amp; recipes</span>
-        <h1 style="font-size:22px;">Settings</h1>
-      </div>
-    </div>
-    <div class="settings-wrap">
-      ${catsHtml || '<p class="hint">No categories yet — add one below to get started.</p>'}
-      <div class="add-cat-form">
-        <input type="text" id="newCatName" placeholder="New category, e.g. Pasta">
-        <button onclick="addCategory()">Add</button>
-      </div>
-      <div class="backup-row">
-        <button class="btn small" onclick="exportData()">Export backup</button>
-        <button class="btn small" onclick="document.getElementById('fileimport').click()">Import backup</button>
-      </div>
-      <input type="file" id="fileimport" accept="application/json" onchange="importData(event)">
-      <p class="hint">Data is stored locally in this browser only.</p>
-    </div>
-  `;
-}
-
-function addCategory(){
-  const input = document.getElementById('newCatName');
-  const name = input.value.trim();
-  if(!name) return;
-  state.categories.push({id:uid(), name, weeklyTarget:2});
-  saveState(); render();
-}
-function renameCategory(id, name){
-  const c = getCategory(id); if(c){ c.name = name.trim()||c.name; saveState(); }
-}
-function bumpTarget(id, delta){
-  const c = getCategory(id);
-  c.weeklyTarget = Math.max(0, (c.weeklyTarget||0)+delta);
-  saveState(); render();
-}
-function deleteCategory(id){
-  if(!confirm('Delete this category and its recipes?')) return;
-  state.categories = state.categories.filter(c=>c.id!==id);
-  state.recipes = state.recipes.filter(r=>r.categoryId!==id);
-  saveState(); render();
-}
-function addRecipe(categoryId){
-  const nameEl = document.getElementById('newrec_'+categoryId);
-  const freqEl = document.getElementById('newrecfreq_'+categoryId);
-  const name = nameEl.value.trim();
-  if(!name) return;
-  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, multiply:false, lastUsedWeekStart:null});
-  saveState(); render();
-}
-function setRecipeFreq(id, val){
-  const r = getRecipe(id); if(r){ r.frequencyWeeks = parseInt(val,10)||1; saveState(); }
-}
-function setRecipeMultiply(id, checked){
-  const r = getRecipe(id); if(r){ r.multiply = !!checked; saveState(); }
-}
-function setRecipeCategory(id, categoryId){
-  const r = getRecipe(id); if(r){ r.categoryId = categoryId; saveState(); render(); }
-}
-function deleteRecipe(id){
-  state.recipes = state.recipes.filter(r=>r.id!==id);
-  saveState(); render();
-}
-
-/* ---------- backup ---------- */
-function exportData(){
-  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'meal-plan-backup.json';
-  document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
-}
-function importData(evt){
-  const file = evt.target.files[0];
-  if(!file) return;
-  const reader = new FileReader();
-  reader.onload = () => {
-    try{
-      const data = JSON.parse(reader.result);
-      if(!data.categories || !data.recipes || !data.weeks) throw new Error('bad file');
-      state = data;
-      saveState();
-      toast('Backup restored');
-      render();
-    }catch(e){ alert('Could not read that file.'); }
-  };
-  reader.readAsText(file);
-  evt.target.value = '';
 }
 
 /* ---------- init ---------- */
