@@ -433,8 +433,11 @@ function downloadWeekPdf(){
       let label, italic=false;
       if(slot.status==='out'){ label = 'Out — no meal needed'; italic=true; }
       else if(slot.status==='planned'){
-        const catTxt = slot.categoryName ? `  (${slot.categoryName})` : '';
-        label = (slot.recipeName || '') + catTxt;
+        const recipe = slot.recipeId ? getRecipe(slot.recipeId) : null;
+        const name = slot.recipeName || (recipe ? recipe.name : '');
+        const catName = slot.categoryName || (recipe ? (getCategory(recipe.categoryId)||{}).name : '');
+        label = name ? (name + (catName ? `  (${catName})` : '')) : 'Not planned';
+        if(!name) italic = true;
       } else { label = 'Not planned'; italic=true; }
 
       doc.setFont('helvetica', italic ? 'italic' : 'normal');
@@ -529,13 +532,15 @@ function quickAdd(date, meal){
     state.categories.push(newCat);
     categoryId = newCat.id;
   }
-  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, lastUsedWeekStart:null};
+  const recipe = {id:uid(), categoryId, name, frequencyWeeks:1, multiplier:1, lastUsedWeekStart:null};
   state.recipes.push(recipe);
   assignSlot(date, meal, recipe.id);
 }
 function freqLabel(r){
-  if(!r.frequencyWeeks || r.frequencyWeeks<=1) return 'weekly ok';
-  return `every ${r.frequencyWeeks} wks`;
+  const parts = [];
+  parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'weekly ok' : `every ${r.frequencyWeeks} wks`);
+  if(r.multiplier && r.multiplier>1) parts.push(`\u00d7${r.multiplier}/wk`);
+  return parts.join(' \u00b7 ');
 }
 function assignSlot(date, meal, recipeId, forceStatus){
   const weekObj = ensureWeek(viewWeekStart);
@@ -653,7 +658,7 @@ function getOrCreateCategory(name, defaultTarget){
 function getOrCreateRecipeInCategory(name, categoryId){
   let r = state.recipes.find(r=>r.categoryId===categoryId && r.name.toLowerCase()===name.toLowerCase());
   if(!r){
-    r = {id:uid(), categoryId, name, frequencyWeeks:1, lastUsedWeekStart:null};
+    r = {id:uid(), categoryId, name, frequencyWeeks:1, multiplier:1, lastUsedWeekStart:null};
     state.recipes.push(r);
   }
   return r;
@@ -694,6 +699,8 @@ function generatePlan(){
   }
 
   // build per-category eligible pools (excluding anything already used as a priority pick this week)
+  // weeklyTarget is a budget of meal-slots for the category; a recipe with a multiplier
+  // consumes that many slots so it always lands the full number of times, not just once.
   const usedIds = new Set(priorityPool.map(r=>r.id));
   const pools = state.categories.filter(c=>c.weeklyTarget>0).map(cat=>{
     const recs = state.recipes.filter(r=>r.categoryId===cat.id && !usedIds.has(r.id));
@@ -709,10 +716,17 @@ function generatePlan(){
       if(av===bv) return Math.random()-0.5;
       return av<bv?-1:1;
     });
-    return { cat, picks: eligible.slice(0, cat.weeklyTarget) };
+    const picks = [];
+    let units = 0;
+    for(const r of eligible){
+      if(units >= cat.weeklyTarget) break;
+      picks.push(r);
+      units += Math.max(1, r.multiplier||1);
+    }
+    return { cat, picks };
   });
 
-  // round-robin interleave category picks
+  // round-robin interleave category picks (distinct recipes, not yet expanded by multiplier)
   const categoryPool = [];
   let more = true, idx = 0;
   while(more){
@@ -724,7 +738,14 @@ function generatePlan(){
   }
 
   // priority picks (freezer + new) go first, then category picks fill the rest
-  const pool = [...priorityPool, ...categoryPool];
+  const selectedDistinct = [...priorityPool, ...categoryPool];
+
+  // expand: a recipe with a multiplier fills that many slots, so it's never shown just once
+  const pool = [];
+  selectedDistinct.forEach(r=>{
+    const copies = Math.max(1, r.multiplier||1);
+    for(let k=0;k<copies;k++) pool.push(r);
+  });
 
   // assign to slots in order
   slotOrder.forEach((s,i)=>{
@@ -777,6 +798,11 @@ function renderSettings(){
           </select>
           <select onchange="setRecipeFreq('${r.id}',this.value)">
             ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${r.frequencyWeeks===n?'selected':''}>${n===1?'every wk':'every '+n+'w'}</option>`).join('')}
+          </select>
+        </div>
+        <div class="ractions" style="margin-top:6px;">
+          <select onchange="setRecipeMultiplier('${r.id}',this.value)">
+            ${[1,2,3].map(n=>`<option value="${n}" ${(r.multiplier||1)===n?'selected':''}>${n===1?'once this week':n+'x this week'}</option>`).join('')}
           </select>
           <button class="del-x" onclick="deleteRecipe('${r.id}')">✕</button>
         </div>
@@ -854,11 +880,14 @@ function addRecipe(categoryId){
   const freqEl = document.getElementById('newrecfreq_'+categoryId);
   const name = nameEl.value.trim();
   if(!name) return;
-  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, lastUsedWeekStart:null});
+  state.recipes.push({id:uid(), categoryId, name, frequencyWeeks:parseInt(freqEl.value,10)||1, multiplier:1, lastUsedWeekStart:null});
   saveState(); render();
 }
 function setRecipeFreq(id, val){
   const r = getRecipe(id); if(r){ r.frequencyWeeks = parseInt(val,10)||1; saveState(); }
+}
+function setRecipeMultiplier(id, val){
+  const r = getRecipe(id); if(r){ r.multiplier = parseInt(val,10)||1; saveState(); }
 }
 function setRecipeCategory(id, categoryId){
   const r = getRecipe(id); if(r){ r.categoryId = categoryId; saveState(); render(); }
