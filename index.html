@@ -202,8 +202,9 @@
 /* ============================================================
    STORAGE + MIGRATION
    ============================================================ */
-const STORE_KEY = 'mealPlan.v2';
-const OLD_STORE_KEY = 'mealPlan.v1';
+const STORE_KEY = 'mealPlan.v3';
+const V2_KEY = 'mealPlan.v2';
+const V1_KEY = 'mealPlan.v1';
 
 function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
 
@@ -215,7 +216,7 @@ function seedDefaultState(){
     {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch'},
     {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner'}
   ];
-  return { mealBases, mealTypes, recipes:[], weeks:{}, lastViewedWeekStart:null };
+  return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null };
 }
 function migrateFromV1(old){
   const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, excludedSeasons:[]}));
@@ -252,12 +253,21 @@ function migrateSlotV1(s){
   if(!s) return {status:'empty', recipeId:null, recipeName:null, baseLabel:null};
   return {status:s.status, recipeId:s.recipeId||null, recipeName:s.recipeName||null, baseLabel:s.categoryName||null};
 }
+function flattenWeeksToDays(obj){
+  const days = {};
+  Object.values(obj.weeks||{}).forEach(week=>{
+    (week.days||[]).forEach(d=>{ days[d.date] = {lunch:d.lunch, dinner:d.dinner}; });
+  });
+  return { mealBases: obj.mealBases, mealTypes: obj.mealTypes, recipes: obj.recipes, days, lastViewedWeekStart: obj.lastViewedWeekStart||null };
+}
 function loadState(){
   try{
-    const rawV2 = localStorage.getItem(STORE_KEY);
-    if(rawV2) return JSON.parse(rawV2);
-    const rawV1 = localStorage.getItem(OLD_STORE_KEY);
-    if(rawV1) return migrateFromV1(JSON.parse(rawV1));
+    const rawV3 = localStorage.getItem(STORE_KEY);
+    if(rawV3) return JSON.parse(rawV3);
+    const rawV2 = localStorage.getItem(V2_KEY);
+    if(rawV2) return flattenWeeksToDays(JSON.parse(rawV2));
+    const rawV1 = localStorage.getItem(V1_KEY);
+    if(rawV1) return flattenWeeksToDays(migrateFromV1(JSON.parse(rawV1)));
   }catch(e){}
   return seedDefaultState();
 }
@@ -272,6 +282,12 @@ function fromISO(iso){ return new Date(iso+'T12:00:00'); }
 function addDays(iso,n){ const d=fromISO(iso); d.setDate(d.getDate()+n); return toISO(d); }
 function todayISO(){ return toISO(new Date()); }
 function weekDates(startISO){ return [0,1,2,3,4,5,6].map(i=>addDays(startISO,i)); }
+function datesBetween(startISO, endISO){
+  const dates = [];
+  let cur = startISO, guard = 0;
+  while(fromISO(cur) <= fromISO(endISO) && guard < 60){ dates.push(cur); cur = addDays(cur,1); guard++; }
+  return dates.length ? dates : [startISO];
+}
 function weeksBetween(iso1, iso2){ return Math.round((fromISO(iso2)-fromISO(iso1))/(7*86400000)); }
 function dayName(iso){ return fromISO(iso).toLocaleDateString(undefined,{weekday:'long'}); }
 function dayShort(iso){ return fromISO(iso).toLocaleDateString(undefined,{month:'short',day:'numeric'}); }
@@ -306,11 +322,10 @@ function toast(msg){
    DATA ACCESS
    ============================================================ */
 function emptySlot(){ return {status:'empty', recipeId:null, recipeName:null, baseLabel:null}; }
-function ensureWeek(startISO){
-  if(!state.weeks[startISO]){
-    state.weeks[startISO] = { startDate:startISO, days: weekDates(startISO).map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
-  }
-  return state.weeks[startISO];
+function peekDay(dateISO){ return state.days[dateISO] || {lunch:emptySlot(), dinner:emptySlot()}; }
+function ensureDay(dateISO){
+  if(!state.days[dateISO]) state.days[dateISO] = {lunch:emptySlot(), dinner:emptySlot()};
+  return state.days[dateISO];
 }
 function getRecipe(id){ return state.recipes.find(r=>r.id===id); }
 function getMealBase(id){ return state.mealBases.find(b=>b.id===id); }
@@ -360,10 +375,10 @@ function renderHome(){
   const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   const today = todayISO();
-  const weekObj = state.weeks[viewWeekStart];
+  const hasAnyContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
 
-  const daysHtml = days.map((date,i)=>{
-    const d = weekObj ? weekObj.days[i] : {date, lunch:emptySlot(), dinner:emptySlot()};
+  const daysHtml = days.map(date=>{
+    const d = peekDay(date);
     return `
     <div class="daycard">
       <div class="dayhead">
@@ -376,7 +391,7 @@ function renderHome(){
     </div>`;
   }).join('');
 
-  const hint = !weekObj ? `<div class="empty-week-hint">Nothing planned yet for this week.<br>Tap a meal to add one, or use Plan meals above.</div>` : '';
+  const hint = !hasAnyContent ? `<div class="empty-week-hint">Nothing planned yet for this week.<br>Tap a meal to add one, or use Plan meals above.</div>` : '';
 
   return `
     <div class="topbar">
@@ -388,13 +403,13 @@ function renderHome(){
     </div>
     <div class="plan-row">
       <button class="stamp-btn" onclick="openWizard()">Plan meals
-        <span class="sub">start day, days out, cravings, freezer, new</span>
+        <span class="sub">how long, days out, cravings, freezer, new</span>
       </button>
       <button class="dl-btn" onclick="downloadWeekPdf()" aria-label="Download this week as PDF" title="Download this week as PDF">⬇</button>
     </div>
     <div class="weeknav">
       <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
-      <div class="range">${firstLabel} – ${lastLabel}<small>swipe to change week</small></div>
+      <div class="range" id="weekRangeLabel">${firstLabel} – ${lastLabel}<small>swipe to change week · hold to clear</small></div>
       <button class="navbtn" onclick="shiftWeek(7)">›</button>
     </div>
     <div class="week-wrap" id="weekWrap">
@@ -430,26 +445,64 @@ function shiftWeek(n){
 
 function attachHomeHandlers(){
   const wrap = document.getElementById('weekWrap');
-  if(!wrap) return;
-  let sx=0, sy=0, dragging=false;
-  wrap.addEventListener('touchstart', e=>{
-    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
-  }, {passive:true});
-  wrap.addEventListener('touchend', e=>{
-    if(!dragging) return; dragging=false;
-    const dx = e.changedTouches[0].clientX - sx;
-    const dy = e.changedTouches[0].clientY - sy;
-    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
-      shiftWeek(dx < 0 ? 7 : -7);
-    }
-  }, {passive:true});
+  if(wrap){
+    let sx=0, sy=0, dragging=false;
+    wrap.addEventListener('touchstart', e=>{
+      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
+    }, {passive:true});
+    wrap.addEventListener('touchend', e=>{
+      if(!dragging) return; dragging=false;
+      const dx = e.changedTouches[0].clientX - sx;
+      const dy = e.changedTouches[0].clientY - sy;
+      if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
+        shiftWeek(dx < 0 ? 7 : -7);
+      }
+    }, {passive:true});
+  }
+
+  const rangeLabel = document.getElementById('weekRangeLabel');
+  if(rangeLabel) attachLongPress(rangeLabel, openClearWeekConfirm);
+}
+
+function attachLongPress(el, callback, duration){
+  duration = duration || 550;
+  let timer = null, moved = false;
+  const start = ()=>{ moved = false; clearTimeout(timer); timer = setTimeout(()=>{ if(!moved) callback(); }, duration); };
+  const cancel = ()=>{ clearTimeout(timer); };
+  const move = ()=>{ moved = true; clearTimeout(timer); };
+  el.addEventListener('touchstart', start, {passive:true});
+  el.addEventListener('touchmove', move, {passive:true});
+  el.addEventListener('touchend', cancel);
+  el.addEventListener('touchcancel', cancel);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', cancel);
+  el.addEventListener('mouseleave', cancel);
+}
+
+function openClearWeekConfirm(){
+  const days = weekDates(viewWeekStart);
+  const label = `${fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} – ${fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`;
+  showOverlay(`
+    <h2>Clear this week?</h2>
+    <p class="desc">This clears every lunch and dinner for ${label}. It can't be undone.</p>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn danger" onclick="clearCurrentWeek()" style="flex:1;">Clear week</button>
+    </div>
+  `);
+}
+function clearCurrentWeek(){
+  weekDates(viewWeekStart).forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
+  saveState();
+  closeOverlay();
+  render();
+  toast('Week cleared');
 }
 
 /* ============================================================
    SLOT EDITOR (tap a meal on Home)
    ============================================================ */
 function openSlotEditor(date, meal){
-  ensureWeek(viewWeekStart);
   currentSlotDate = date; currentSlotMeal = meal;
 
   const shown = new Set();
@@ -537,14 +590,13 @@ function quickAdd(date, meal){
   assignSlot(date, meal, recipe.id);
 }
 function assignSlot(date, meal, recipeId, forceStatus){
-  const weekObj = ensureWeek(viewWeekStart);
-  const day = weekObj.days.find(d=>d.date===date);
+  const day = ensureDay(date);
   if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null}; }
   else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
   else {
     const r = getRecipe(recipeId);
     day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (baseNames(r).join(', ')||null) : null};
-    if(r){ r.lastUsedWeekStart = viewWeekStart; removeIfEphemeral(r); }
+    if(r){ r.lastUsedWeekStart = date; removeIfEphemeral(r); }
   }
   saveState();
   closeOverlay();
@@ -554,9 +606,9 @@ function assignSlot(date, meal, recipeId, forceStatus){
 /* ============================================================
    WIZARD: Plan meals
    ============================================================ */
-let wizard = { startDate:null, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
   renderWizardStep1();
 }
 function dots(n,total){
@@ -564,14 +616,28 @@ function dots(n,total){
   for(let i=0;i<total;i++) s+= `<span class="${i<n?'active':''}"></span>`;
   return s+'</div>';
 }
+function setWizDuration(n){
+  const startVal = document.getElementById('wizStart').value || wizard.startDate;
+  document.getElementById('wizEnd').value = addDays(startVal, n-1);
+}
 function renderWizardStep1(){
   showOverlay(`
     ${dots(1,5)}
     <h2>Plan meals</h2>
-    <p class="desc">What day are you planning from?</p>
+    <p class="desc">How long are you planning meals for?</p>
     <div class="field">
       <label>Start date</label>
-      <input type="date" id="wizDate" value="${wizard.startDate}">
+      <input type="date" id="wizStart" value="${wizard.startDate}">
+    </div>
+    <div class="field">
+      <label>Until (last day included)</label>
+      <input type="date" id="wizEnd" value="${wizard.endDate}">
+    </div>
+    <div class="chip-group" style="margin-bottom:6px;">
+      <button type="button" class="chip" onclick="setWizDuration(3)">3 days</button>
+      <button type="button" class="chip" onclick="setWizDuration(7)">1 week</button>
+      <button type="button" class="chip" onclick="setWizDuration(10)">10 days</button>
+      <button type="button" class="chip" onclick="setWizDuration(14)">2 weeks</button>
     </div>
     <div class="btnrow">
       <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
@@ -580,9 +646,15 @@ function renderWizardStep1(){
   `);
 }
 function wizardStep2(){
-  const val = document.getElementById('wizDate').value;
-  if(val) wizard.startDate = val;
-  const days = weekDates(wizard.startDate);
+  const startVal = document.getElementById('wizStart').value;
+  const endVal = document.getElementById('wizEnd').value;
+  if(startVal) wizard.startDate = startVal;
+  if(endVal) wizard.endDate = endVal;
+  if(fromISO(wizard.endDate) < fromISO(wizard.startDate)){
+    alert("The end date can't be before the start date.");
+    return;
+  }
+  const days = datesBetween(wizard.startDate, wizard.endDate);
   const rows = days.map(date=>['lunch','dinner'].map(meal=>{
     const key = date+'_'+meal;
     const checked = wizard.skips[key] ? 'checked' : '';
@@ -611,8 +683,8 @@ function wizardStep3(){
   const chips = inSeasonBases.map(b=>`<button type="button" class="chip ${wizard.fancyBaseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleFancyBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
   showOverlay(`
     ${dots(3,5)}
-    <h2>What are you fancying this week?</h2>
-    <p class="desc">Tick any meal bases you want this week to lean on. Leave blank to just use your usual weekly targets from Settings. (Bases marked out of season for ${season} aren't shown.)</p>
+    <h2>What are you fancying?</h2>
+    <p class="desc">Tick any meal bases you want this stretch to lean on. Leave blank to just use your usual weekly targets from Settings. (Bases marked out of season for ${season} aren't shown.)</p>
     <div class="chip-group">${chips || '<p class="desc">No in-season meal bases to choose from.</p>'}</div>
     <div class="btnrow">
       <button class="btn ghost" onclick="wizardStep2()">Back</button>
@@ -630,7 +702,7 @@ function wizardStep4(){
   showOverlay(`
     ${dots(4,5)}
     <h2>What's in the freezer?</h2>
-    <p class="desc">List anything you want worked into this week — one per line or separated by commas. Leave blank to skip.</p>
+    <p class="desc">List anything you want worked in — one per line or separated by commas. Leave blank to skip.</p>
     <div class="field">
       <textarea id="wizFreezer" rows="4" placeholder="e.g. chicken thighs, beef mince, salmon fillets">${escapeHtml(wizard.freezerText)}</textarea>
     </div>
@@ -645,7 +717,7 @@ function wizardStep5(){
   showOverlay(`
     ${dots(5,5)}
     <h2>Cooking anything new?</h2>
-    <p class="desc">List any new recipes you want to try this week — one per line or separated by commas. Leave blank to skip.</p>
+    <p class="desc">List any new recipes you want to try — one per line or separated by commas. Leave blank to skip.</p>
     <div class="field">
       <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
     </div>
@@ -662,18 +734,18 @@ function wizardStep5(){
 function generatePlan(){
   wizard.newText = document.getElementById('wizNew').value;
   const startISO = wizard.startDate;
-  const days = weekDates(startISO);
-  const existing = state.weeks[startISO];
-  const hasContent = existing && existing.days.some(d=>d.lunch.status!=='empty'||d.dinner.status!=='empty');
-  if(hasContent && !confirm('This week already has a plan. Replace it?')) return;
+  const endISO = wizard.endDate;
+  const days = datesBetween(startISO, endISO);
+  const hasContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
+  if(hasContent && !confirm('Some of these days already have a plan. Replace it?')) return;
 
-  const weekObj = { startDate:startISO, days: days.map(date=>({date, lunch:emptySlot(), dinner:emptySlot()})) };
+  days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
 
   const slotOrder = [];
   days.forEach(date=>{
     ['lunch','dinner'].forEach(meal=>{
       const key = date+'_'+meal;
-      const day = weekObj.days.find(d=>d.date===date);
+      const day = state.days[date];
       if(wizard.skips[key]) day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null};
       else slotOrder.push({date,meal});
     });
@@ -704,9 +776,10 @@ function generatePlan(){
   const priorityCount = Math.min(priorityPool.length, slotOrder.length);
   for(let i=0;i<priorityCount;i++){
     const r = priorityPool[i];
-    const day = weekObj.days.find(d=>d.date===slotOrder[i].date);
-    day[slotOrder[i].meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
-    r.lastUsedWeekStart = startISO;
+    const slot = slotOrder[i];
+    const day = state.days[slot.date];
+    day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+    r.lastUsedWeekStart = slot.date;
   }
   priorityPool.slice(0,priorityCount).forEach(r=>removeIfEphemeral(r));
   const remainingSlots = slotOrder.slice(priorityCount);
@@ -816,10 +889,10 @@ function generatePlan(){
         usedDates.add(s.date);
       }
       placements.forEach(slot=>{
-        const day = weekObj.days.find(d=>d.date===slot.date);
+        const day = state.days[slot.date];
         day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
       });
-      r.lastUsedWeekStart = startISO;
+      r.lastUsedWeekStart = placements[0].date;
     });
 
     // place the remaining single-copy recipes into whatever slots are left
@@ -829,21 +902,20 @@ function generatePlan(){
       let idx = queue.findIndex(r=>prefersSlot(r, slot.meal));
       if(idx===-1) idx = 0;
       const [r] = queue.splice(idx,1);
-      const day = weekObj.days.find(d=>d.date===slot.date);
+      const day = state.days[slot.date];
       day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
-      r.lastUsedWeekStart = startISO;
+      r.lastUsedWeekStart = slot.date;
     });
   }
 
-  state.weeks[startISO] = weekObj;
   state.lastViewedWeekStart = startISO;
   viewWeekStart = startISO;
   saveState();
   closeOverlay();
   render();
 
-  const filledCount = weekObj.days.reduce((n,d)=>n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0),0);
-  toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Week planned');
+  const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
+  toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Plan complete');
 }
 
 /* ============================================================
@@ -1137,7 +1209,7 @@ function importData(evt){
   reader.onload = () => {
     try{
       const data = JSON.parse(reader.result);
-      if(!data.mealBases || !data.mealTypes || !data.recipes || !data.weeks) throw new Error('bad file');
+      if(!data.mealBases || !data.mealTypes || !data.recipes || !data.days) throw new Error('bad file');
       state = data;
       saveState();
       toast('Backup restored');
@@ -1165,7 +1237,6 @@ function downloadWeekPdf(){
   let y = 64;
 
   const days = weekDates(viewWeekStart);
-  const weekObj = state.weeks[viewWeekStart];
   const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
   const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
 
@@ -1184,8 +1255,8 @@ function downloadWeekPdf(){
   doc.line(margin, y, pageWidth-margin, y);
   y += 28;
 
-  days.forEach((date,i)=>{
-    const d = weekObj ? weekObj.days[i] : {lunch:emptySlot(), dinner:emptySlot()};
+  days.forEach((date)=>{
+    const d = peekDay(date);
     if(y > pageHeight - 100){ doc.addPage(); y = 64; }
 
     doc.setFont('times','bold');
