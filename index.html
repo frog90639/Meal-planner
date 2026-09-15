@@ -175,6 +175,8 @@
   .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);font-size:15px;line-height:1;}
   .target-stepper .tval{width:52px;text-align:center;font-size:12px;color:var(--ink-soft);}
   .rule-row select{flex:none;border:1px solid var(--paper-line);border-radius:6px;font-size:11px;padding:5px;background:#fff;color:var(--ink);}
+  .busy-toggle{flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+  .busy-toggle input{width:15px;height:15px;accent-color:var(--brick);}
   .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;flex:none;}
   .add-cat-form{display:flex;gap:8px;margin-top:10px;}
   .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:#fff;color:var(--ink);font-size:14px;}
@@ -211,20 +213,20 @@ function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toStrin
 function seedDefaultState(){
   const mealBases = ['Pasta','Rice','Potato','Noodles','Bread','Salad'].map(name=>({id:uid(), name, weeklyTarget:1, excludedSeasons:[]}));
   const mealTypes = [
-    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null},
-    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null},
-    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch'},
-    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner'}
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false}
   ];
   return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null };
 }
 function migrateFromV1(old){
   const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, excludedSeasons:[]}));
   const mealTypes = [
-    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null},
-    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null},
-    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch'},
-    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner'}
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false}
   ];
   const recipes = (old.recipes||[]).map(r=>({
     id:r.id, name:r.name,
@@ -273,6 +275,13 @@ function loadState(){
 }
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
 let state = loadState();
+function ensureBusyDayDefault(){
+  if(!state.mealTypes.some(t=>t.busyDay)){
+    const m = state.mealTypes.find(t=>t.name.trim().toLowerCase()==='mindless');
+    if(m) m.busyDay = true;
+  }
+}
+ensureBusyDayDefault();
 
 /* ============================================================
    DATE HELPERS
@@ -606,9 +615,9 @@ function assignSlot(date, meal, recipeId, forceStatus){
 /* ============================================================
    WIZARD: Plan meals
    ============================================================ */
-let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'' };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], freezerText:'', newText:'' };
+  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'' };
   renderWizardStep1();
 }
 function dots(n,total){
@@ -622,7 +631,7 @@ function setWizDuration(n){
 }
 function renderWizardStep1(){
   showOverlay(`
-    ${dots(1,5)}
+    ${dots(1,6)}
     <h2>Plan meals</h2>
     <p class="desc">How long are you planning meals for?</p>
     <div class="field">
@@ -665,7 +674,7 @@ function wizardStep2(){
   }).join('')).join('');
 
   showOverlay(`
-    ${dots(2,5)}
+    ${dots(2,6)}
     <h2>Any meals you'll be out?</h2>
     <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
     <div class="checklist">${rows}</div>
@@ -682,7 +691,7 @@ function wizardStep3(){
   const inSeasonBases = state.mealBases.filter(b=>!(b.excludedSeasons||[]).includes(season));
   const chips = inSeasonBases.map(b=>`<button type="button" class="chip ${wizard.fancyBaseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleFancyBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
   showOverlay(`
-    ${dots(3,5)}
+    ${dots(3,6)}
     <h2>What are you fancying?</h2>
     <p class="desc">Tick any meal bases you want this stretch to lean on. Leave blank to just use your usual weekly targets from Settings. (Bases marked out of season for ${season} aren't shown.)</p>
     <div class="chip-group">${chips || '<p class="desc">No in-season meal bases to choose from.</p>'}</div>
@@ -699,30 +708,54 @@ function toggleFancyBase(id){
 }
 
 function wizardStep4(){
+  const days = datesBetween(wizard.startDate, wizard.endDate);
+  const chips = days.map(d=>`<button type="button" class="chip" data-date="${d}" onclick="setBusyDate('${d}')">${dayName(d)} <span style="opacity:.7;">${dayShort(d)}</span></button>`).join('');
   showOverlay(`
-    ${dots(4,5)}
+    ${dots(4,6)}
+    <h2>Which day's likely to be busiest?</h2>
+    <p class="desc">We'll lean on your easy (mindless) meals that day. Optional — leave unselected to skip.</p>
+    <div class="chip-group" id="busyDayChips">${chips}</div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="wizardStep3()">Back</button>
+      <button class="btn primary" onclick="wizardStep5()">Next</button>
+    </div>
+  `);
+  document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
+  });
+}
+function setBusyDate(d){
+  wizard.busyDate = (wizard.busyDate===d) ? null : d;
+  document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
+  });
+}
+
+function wizardStep5(){
+  showOverlay(`
+    ${dots(5,6)}
     <h2>What's in the freezer?</h2>
     <p class="desc">List anything you want worked in — one per line or separated by commas. Leave blank to skip.</p>
     <div class="field">
       <textarea id="wizFreezer" rows="4" placeholder="e.g. chicken thighs, beef mince, salmon fillets">${escapeHtml(wizard.freezerText)}</textarea>
     </div>
     <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep3()">Back</button>
-      <button class="btn primary" onclick="wizardStep5()">Next</button>
+      <button class="btn ghost" onclick="wizardStep4()">Back</button>
+      <button class="btn primary" onclick="wizardStep6()">Next</button>
     </div>
   `);
 }
-function wizardStep5(){
+function wizardStep6(){
   wizard.freezerText = document.getElementById('wizFreezer').value;
   showOverlay(`
-    ${dots(5,5)}
+    ${dots(6,6)}
     <h2>Cooking anything new?</h2>
     <p class="desc">List any new recipes you want to try — one per line or separated by commas. Leave blank to skip.</p>
     <div class="field">
       <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
     </div>
     <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep4()">Back</button>
+      <button class="btn ghost" onclick="wizardStep5()">Back</button>
       <button class="btn primary" onclick="generatePlan()">Plan the week</button>
     </div>
   `);
@@ -814,6 +847,10 @@ function generatePlan(){
       return c;
     }
 
+    function hasBusyTag(r){
+      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.busyDay; });
+    }
+
     const selected = [], selectedIds = new Set();
     let unitsUsed = 0;
     const baseCounts = {}, typeCounts = {};
@@ -826,6 +863,19 @@ function generatePlan(){
       return true;
     }
 
+    // pass 0: if a busiest day was picked, make sure enough easy (busy-tagged) meals
+    // are selected to cover that day's slots before anything else is chosen
+    if(wizard.busyDate){
+      const busySlotCount = remainingSlots.filter(s=>s.date===wizard.busyDate).length;
+      let guard=0;
+      while((typeCounts.__busy||0) < busySlotCount && guard<10){
+        guard++;
+        const c = candidates.find(r=>!selectedIds.has(r.id) && hasBusyTag(r));
+        if(!c) break;
+        tryAdd(c);
+        typeCounts.__busy = (typeCounts.__busy||0) + 1;
+      }
+    }
     // pass 1: meet meal-type weekly minimums (global rule)
     state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
       let guard=0;
@@ -876,13 +926,17 @@ function generatePlan(){
     multiplyRecipes.forEach(r=>{
       if(!openSlots.length) return;
       const copies = decideCopies(r);
-      const [startSlot] = openSlots.splice(0,1);
+      // prefer to start away from the busiest day, keeping it free for easy meals
+      let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
+      if(startIdx===-1) startIdx = 0;
+      const [startSlot] = openSlots.splice(startIdx,1);
       const startDate = startSlot.date;
       const maxDate = addDays(startDate, 2);
       const placements = [startSlot];
       const usedDates = new Set([startDate]);
       for(let k=1;k<copies;k++){
-        const idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
+        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate);
+        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
         if(idx===-1) break; // couldn't fit another copy within the window — place what we can
         const [s] = openSlots.splice(idx,1);
         placements.push(s);
@@ -895,11 +949,18 @@ function generatePlan(){
       r.lastUsedWeekStart = placements[0].date;
     });
 
-    // place the remaining single-copy recipes into whatever slots are left
+    // place the remaining single-copy recipes into whatever slots are left —
+    // the busiest day gets first refusal on any easy (busy-tagged) recipes,
+    // and other days actively avoid using them up while alternatives exist
     const queue = singleRecipes.slice();
+    const busyModeOn = !!wizard.busyDate;
     openSlots.forEach(slot=>{
       if(!queue.length) return;
-      let idx = queue.findIndex(r=>prefersSlot(r, slot.meal));
+      const isBusySlot = busyModeOn && slot.date===wizard.busyDate;
+      let idx = -1;
+      if(isBusySlot) idx = queue.findIndex(r=>hasBusyTag(r));
+      if(idx===-1) idx = queue.findIndex(r=>prefersSlot(r, slot.meal) && (!busyModeOn || isBusySlot || !hasBusyTag(r)));
+      if(idx===-1 && busyModeOn && !isBusySlot) idx = queue.findIndex(r=>!hasBusyTag(r));
       if(idx===-1) idx = 0;
       const [r] = queue.splice(idx,1);
       const day = state.days[slot.date];
@@ -1032,11 +1093,15 @@ function renderMealTypesSection(){
         <option value="dinner" ${t.slotPref==='dinner'?'selected':''}>prefers dinner</option>
       </select>
       <button class="del-x" onclick="deleteMealType('${t.id}')">✕</button>
+      <label class="busy-toggle">
+        <input type="checkbox" ${t.busyDay?'checked':''} onchange="setTypeBusyDay('${t.id}',this.checked)">
+        use for busiest-day meals
+      </label>
     </div>`).join('');
   return `
     <div class="cat-card">
       <h3 class="section-title">Meal types</h3>
-      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule.</p>
+      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on.</p>
       ${rows || '<p class="hint">No meal types yet.</p>'}
       <div class="add-cat-form">
         <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
@@ -1048,7 +1113,7 @@ function addMealType(){
   const input = document.getElementById('newTypeName');
   const name = input.value.trim();
   if(!name) return;
-  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null});
+  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false});
   saveState(); render();
 }
 function renameMealType(id, name){
@@ -1060,6 +1125,9 @@ function bumpTypeMin(id, delta){
 }
 function setTypeSlotPref(id, val){
   const t = getMealType(id); if(t){ t.slotPref = val || null; saveState(); }
+}
+function setTypeBusyDay(id, checked){
+  const t = getMealType(id); if(t){ t.busyDay = !!checked; saveState(); }
 }
 function deleteMealType(id){
   if(!confirm('Delete this meal type? Recipes using it will just lose that tag.')) return;
