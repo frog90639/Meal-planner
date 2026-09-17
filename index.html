@@ -408,7 +408,10 @@ function renderHome(){
         <span class="kicker">this week's table</span>
         <h1>Meal Plan</h1>
       </div>
-      <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
+      <div style="display:flex;gap:8px;">
+        <button class="iconbtn" onclick="shareCurrentWeek()" aria-label="Share this week as a view-only link" title="Share as view-only link">🔗</button>
+        <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
+      </div>
     </div>
     <div class="plan-row">
       <button class="stamp-btn" onclick="openWizard()">Plan meals
@@ -996,6 +999,81 @@ function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
 function openSettings(){ view='settings'; render(); }
 function backHome(){ view='home'; render(); }
 
+/* ============================================================
+   SHARE (view-only permalink — data lives in the link itself,
+   since this app has no server/account to host it centrally)
+   ============================================================ */
+function b64EncodeUnicode(str){ return btoa(unescape(encodeURIComponent(str))); }
+function b64DecodeUnicode(str){ return decodeURIComponent(escape(atob(str))); }
+function simplifySlot(s){
+  if(s.status==='out') return {status:'out'};
+  if(s.status==='planned') return {status:'planned', name:s.recipeName||'', base:s.baseLabel||''};
+  return {status:'empty'};
+}
+function shareCurrentWeek(){
+  const days = weekDates(viewWeekStart);
+  const payload = {
+    start: days[0],
+    end: days[6],
+    days: days.map(date=>{
+      const d = peekDay(date);
+      return { date, lunch: simplifySlot(d.lunch), dinner: simplifySlot(d.dinner) };
+    })
+  };
+  let encoded;
+  try{ encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(payload))); }
+  catch(e){ alert("Couldn't build a share link for this week."); return; }
+  const url = `${location.origin}${location.pathname}#share=${encoded}`;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(()=>toast('Link copied — it shows this week only, as it looks right now'))
+      .catch(()=>showShareFallback(url));
+  } else {
+    showShareFallback(url);
+  }
+}
+function showShareFallback(url){
+  showOverlay(`
+    <h2>Share this week</h2>
+    <p class="desc">Copy this link — anyone who opens it sees this week, view-only, exactly as it looks now. It won't update if you change the plan later; share a fresh link if you do.</p>
+    <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
+    <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Done</button></div>
+  `);
+}
+function renderSharedView(payload){
+  const app = document.getElementById('app');
+  const firstLabel = fromISO(payload.start).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const lastLabel = fromISO(payload.end).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const daysHtml = payload.days.map(d=>`
+    <div class="daycard">
+      <div class="dayhead">
+        <span class="dname">${dayName(d.date)}</span>
+        <span class="ddate">${dayShort(d.date)}</span>
+      </div>
+      ${renderSharedMealRow('lunch', d.lunch)}
+      ${renderSharedMealRow('dinner', d.dinner)}
+    </div>`).join('');
+  app.innerHTML = `
+    <div class="topbar">
+      <div class="brand">
+        <span class="kicker">shared meal plan · view only</span>
+        <h1>Meal Plan</h1>
+      </div>
+    </div>
+    <div class="weeknav">
+      <div class="range" style="margin:0 auto;">${firstLabel} – ${lastLabel}</div>
+    </div>
+    <div class="week-wrap">${daysHtml}</div>
+    <p class="hint">This is a snapshot shared as a link — nothing here can be edited, and it won't reflect later changes.</p>
+  `;
+}
+function renderSharedMealRow(meal, slot){
+  let inner;
+  if(slot.status==='out') inner = `<div class="slot out">Out — no meal needed</div>`;
+  else if(slot.status==='planned') inner = `<div class="slot planned"><span class="rname">${escapeHtml(slot.name)}</span><span class="rcat">${escapeHtml(slot.base)}</span></div>`;
+  else inner = `<div class="slot empty">Not planned</div>`;
+  return `<div class="meal-row"><span class="meal-label">${meal}</span>${inner}</div>`;
+}
+
 function renderSettings(){
   return `
     <div class="topbar">
@@ -1378,7 +1456,19 @@ function downloadWeekPdf(){
 }
 
 /* ---------- init ---------- */
-render();
+function initApp(){
+  const hash = window.location.hash || '';
+  if(hash.startsWith('#share=')){
+    try{
+      const encoded = decodeURIComponent(hash.slice(7));
+      const payload = JSON.parse(b64DecodeUnicode(encoded));
+      renderSharedView(payload);
+      return;
+    }catch(e){ /* fall through to the normal app if the link is malformed */ }
+  }
+  render();
+}
+initApp();
 </script>
 </body>
 </html>
