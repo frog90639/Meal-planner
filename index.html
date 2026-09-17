@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Meal Plan</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
   :root{
     --bg:#FFF3E1;
@@ -284,6 +286,35 @@ function ensureBusyDayDefault(){
 ensureBusyDayDefault();
 
 /* ============================================================
+   FIREBASE (live share)
+   ============================================================ */
+const firebaseConfig = {
+  apiKey: "AIzaSyBWyu_dYoZ2x0NXw1JJ-DcEAD6fEHmxCzk",
+  authDomain: "meal-plan-2c5b0.firebaseapp.com",
+  projectId: "meal-plan-2c5b0",
+  storageBucket: "meal-plan-2c5b0.firebasestorage.app",
+  messagingSenderId: "1094866173833",
+  appId: "1:1094866173833:web:ac5618975734acd685ab58"
+};
+let firebaseDb = null;
+try{
+  firebase.initializeApp(firebaseConfig);
+  firebaseDb = firebase.firestore();
+}catch(e){ console.error('Firebase init failed', e); }
+
+const SHARE_META_KEY = 'mealPlanShareMeta';
+function loadShareMeta(){
+  try{ const raw = localStorage.getItem(SHARE_META_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return { active:false, weekStart:null, shareId:null };
+}
+function saveShareMeta(){ localStorage.setItem(SHARE_META_KEY, JSON.stringify(shareMeta)); }
+let shareMeta = loadShareMeta();
+function ensureShareId(){
+  if(!shareMeta.shareId){ shareMeta.shareId = uid()+uid(); saveShareMeta(); }
+  return shareMeta.shareId;
+}
+
+/* ============================================================
    DATE HELPERS
    ============================================================ */
 function toISO(d){ return d.toISOString().slice(0,10); }
@@ -409,7 +440,7 @@ function renderHome(){
         <h1>Meal Plan</h1>
       </div>
       <div style="display:flex;gap:8px;">
-        <button class="iconbtn" onclick="shareCurrentWeek()" aria-label="Share this week as a view-only link" title="Share as view-only link">🔗</button>
+        <button class="iconbtn" onclick="shareCurrentWeek()" aria-label="Live-share this week" title="Live-share this week">🔗</button>
         <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
       </div>
     </div>
@@ -506,6 +537,7 @@ function openClearWeekConfirm(){
 function clearCurrentWeek(){
   weekDates(viewWeekStart).forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
   saveState();
+  refreshLiveShare();
   closeOverlay();
   render();
   toast('Week cleared');
@@ -611,6 +643,7 @@ function assignSlot(date, meal, recipeId, forceStatus){
     if(r){ r.lastUsedWeekStart = date; removeIfEphemeral(r); }
   }
   saveState();
+  refreshLiveShare();
   closeOverlay();
   render();
 }
@@ -975,6 +1008,7 @@ function generatePlan(){
   state.lastViewedWeekStart = startISO;
   viewWeekStart = startISO;
   saveState();
+  refreshLiveShare();
   closeOverlay();
   render();
 
@@ -1000,8 +1034,7 @@ function openSettings(){ view='settings'; render(); }
 function backHome(){ view='home'; render(); }
 
 /* ============================================================
-   SHARE (view-only permalink — data lives in the link itself,
-   since this app has no server/account to host it centrally)
+   SHARE — live link (Firestore) with a snapshot-link fallback
    ============================================================ */
 function b64EncodeUnicode(str){ return btoa(unescape(encodeURIComponent(str))); }
 function b64DecodeUnicode(str){ return decodeURIComponent(escape(atob(str))); }
@@ -1010,36 +1043,83 @@ function simplifySlot(s){
   if(s.status==='planned') return {status:'planned', name:s.recipeName||'', base:s.baseLabel||''};
   return {status:'empty'};
 }
-function shareCurrentWeek(){
-  const days = weekDates(viewWeekStart);
-  const payload = {
+function buildWeekPayload(weekStart){
+  const days = weekDates(weekStart);
+  return {
     start: days[0],
     end: days[6],
     days: days.map(date=>{
       const d = peekDay(date);
       return { date, lunch: simplifySlot(d.lunch), dinner: simplifySlot(d.dinner) };
-    })
+    }),
+    updatedAt: Date.now()
   };
-  let encoded;
-  try{ encoded = encodeURIComponent(b64EncodeUnicode(JSON.stringify(payload))); }
-  catch(e){ alert("Couldn't build a share link for this week."); return; }
-  const url = `${location.origin}${location.pathname}#share=${encoded}`;
+}
+function buildShareUrl(){
+  return `${location.origin}${location.pathname}#live=${encodeURIComponent(shareMeta.shareId)}`;
+}
+function refreshLiveShare(){
+  if(!shareMeta.active || !shareMeta.shareId || !firebaseDb) return;
+  firebaseDb.collection('sharedWeeks').doc(shareMeta.shareId)
+    .set(buildWeekPayload(shareMeta.weekStart))
+    .catch(()=>{ /* best-effort; app keeps working offline either way */ });
+}
+function copyOrShow(url, msg){
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(url).then(()=>toast('Link copied — it shows this week only, as it looks right now'))
-      .catch(()=>showShareFallback(url));
+    navigator.clipboard.writeText(url).then(()=>toast(msg)).catch(()=>showShareFallback(url, msg));
   } else {
-    showShareFallback(url);
+    showShareFallback(url, msg);
   }
 }
-function showShareFallback(url){
+function shareCurrentWeek(){
+  if(!firebaseDb){ alert("Live sharing isn't available right now — check your connection and try again."); return; }
+  if(shareMeta.active && shareMeta.weekStart===viewWeekStart){
+    showShareInfo();
+    return;
+  }
+  if(shareMeta.active && shareMeta.weekStart!==viewWeekStart){
+    if(!confirm(`You're already live-sharing the week of ${dayShort(shareMeta.weekStart)}. Switch the live link to this week instead?`)) return;
+  }
+  shareMeta.active = true;
+  shareMeta.weekStart = viewWeekStart;
+  ensureShareId();
+  saveShareMeta();
+  refreshLiveShare();
+  copyOrShow(buildShareUrl(), 'Live link copied — it updates automatically as you edit this week');
+}
+function showShareInfo(){
+  const url = buildShareUrl();
   showOverlay(`
-    <h2>Share this week</h2>
-    <p class="desc">Copy this link — anyone who opens it sees this week, view-only, exactly as it looks now. It won't update if you change the plan later; share a fresh link if you do.</p>
+    <h2>Live sharing this week</h2>
+    <p class="desc">Anyone with this link sees this week update automatically as you edit it.</p>
     <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
-    <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Done</button></div>
+    <div class="btnrow">
+      <button class="btn danger" onclick="stopLiveShare()">Stop sharing</button>
+      <button class="btn primary" onclick="closeOverlay()">Done</button>
+    </div>
   `);
 }
-function renderSharedView(payload){
+function showShareFallback(url, msg){
+  showOverlay(`
+    <h2>Live sharing this week</h2>
+    <p class="desc">${escapeHtml(msg||'Copy this link — it updates automatically as you edit this week.')}</p>
+    <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
+    <div class="btnrow">
+      <button class="btn danger" onclick="stopLiveShare()">Stop sharing</button>
+      <button class="btn primary" onclick="closeOverlay()">Done</button>
+    </div>
+  `);
+}
+function stopLiveShare(){
+  if(shareMeta.shareId && firebaseDb){
+    firebaseDb.collection('sharedWeeks').doc(shareMeta.shareId).delete().catch(()=>{});
+  }
+  shareMeta.active = false;
+  saveShareMeta();
+  closeOverlay();
+  toast('Live sharing stopped');
+}
+function renderSharedView(payload, live){
   const app = document.getElementById('app');
   const firstLabel = fromISO(payload.start).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
   const lastLabel = fromISO(payload.end).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
@@ -1055,7 +1135,7 @@ function renderSharedView(payload){
   app.innerHTML = `
     <div class="topbar">
       <div class="brand">
-        <span class="kicker">shared meal plan · view only</span>
+        <span class="kicker">shared meal plan · ${live?'live':'view only'}</span>
         <h1>Meal Plan</h1>
       </div>
     </div>
@@ -1063,8 +1143,24 @@ function renderSharedView(payload){
       <div class="range" style="margin:0 auto;">${firstLabel} – ${lastLabel}</div>
     </div>
     <div class="week-wrap">${daysHtml}</div>
-    <p class="hint">This is a snapshot shared as a link — nothing here can be edited, and it won't reflect later changes.</p>
+    <p class="hint">${live ? "This updates automatically as they edit — nothing here can be edited by you." : "This is a snapshot shared as a link — nothing here can be edited, and it won't reflect later changes."}</p>
   `;
+}
+function renderSharedMessage(text){
+  document.getElementById('app').innerHTML = `
+    <div class="topbar"><div class="brand"><h1>Meal Plan</h1></div></div>
+    <p class="hint" style="margin-top:40px;">${escapeHtml(text)}</p>
+  `;
+}
+function listenLiveShare(shareId){
+  renderSharedMessage('Loading…');
+  if(!firebaseDb){ renderSharedMessage("Couldn't connect to load this shared plan."); return; }
+  firebaseDb.collection('sharedWeeks').doc(shareId).onSnapshot(doc=>{
+    if(!doc.exists){ renderSharedMessage('This link is no longer being shared.'); return; }
+    renderSharedView(doc.data(), true);
+  }, ()=>{
+    renderSharedMessage("Couldn't load this shared plan.");
+  });
 }
 function renderSharedMealRow(meal, slot){
   let inner;
@@ -1458,11 +1554,16 @@ function downloadWeekPdf(){
 /* ---------- init ---------- */
 function initApp(){
   const hash = window.location.hash || '';
+  if(hash.startsWith('#live=')){
+    const shareId = decodeURIComponent(hash.slice(6));
+    listenLiveShare(shareId);
+    return;
+  }
   if(hash.startsWith('#share=')){
     try{
       const encoded = decodeURIComponent(hash.slice(7));
       const payload = JSON.parse(b64DecodeUnicode(encoded));
-      renderSharedView(payload);
+      renderSharedView(payload, false);
       return;
     }catch(e){ /* fall through to the normal app if the link is malformed */ }
   }
