@@ -582,7 +582,11 @@ function openSlotEditor(date, meal){
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
     </div>
-    ${baseSections}${otherSection}${noneMsg}
+    <input type="text" id="slotSearch" placeholder="Search recipes…" oninput="filterSlotRecipes()" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--paper-line);font-size:14px;margin-bottom:14px;">
+    <div id="slotRecipeList">
+      ${baseSections}${otherSection}${noneMsg}
+      <p class="desc" id="slotNoMatch" style="display:none;">No recipes match "<span id="slotNoMatchTerm"></span>".</p>
+    </div>
     <div class="picker-cat">
       <h4>Add a new recipe</h4>
       <input type="text" id="qaName" placeholder="Recipe name" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--paper-line);font-size:14px;margin-bottom:10px;">
@@ -591,6 +595,27 @@ function openSlotEditor(date, meal){
       <button class="btn primary small" style="width:100%;margin-top:10px;" onclick="quickAdd('${date}','${meal}')">Add &amp; use for this meal</button>
     </div>
   `);
+}
+function filterSlotRecipes(){
+  const input = document.getElementById('slotSearch');
+  const q = (input ? input.value : '').trim().toLowerCase();
+  let totalVisible = 0;
+  document.querySelectorAll('#slotRecipeList .picker-cat').forEach(details=>{
+    let anyVisible = false;
+    details.querySelectorAll('.picker-opt').forEach(opt=>{
+      const match = !q || opt.textContent.toLowerCase().includes(q);
+      opt.style.display = match ? '' : 'none';
+      if(match){ anyVisible = true; totalVisible++; }
+    });
+    details.style.display = anyVisible ? '' : 'none';
+    if(q) details.open = anyVisible; else details.removeAttribute('open');
+  });
+  const noMatch = document.getElementById('slotNoMatch');
+  if(noMatch){
+    noMatch.style.display = (q && totalVisible===0) ? '' : 'none';
+    const termEl = document.getElementById('slotNoMatchTerm');
+    if(termEl) termEl.textContent = input ? input.value.trim() : '';
+  }
 }
 function toggleQaBase(id){
   const d = window.__qaDraft; const i = d.baseIds.indexOf(id);
@@ -651,9 +676,9 @@ function assignSlot(date, meal, recipeId, forceStatus){
 /* ============================================================
    WIZARD: Plan meals
    ============================================================ */
-let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'' };
+let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'' };
+  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
   renderWizardStep1();
 }
 function dots(n,total){
@@ -792,9 +817,76 @@ function wizardStep6(){
     </div>
     <div class="btnrow">
       <button class="btn ghost" onclick="wizardStep5()">Back</button>
-      <button class="btn primary" onclick="generatePlan()">Plan the week</button>
+      <button class="btn primary" onclick="finishNewRecipesStep()">Next</button>
     </div>
   `);
+}
+function finishNewRecipesStep(){
+  wizard.newText = document.getElementById('wizNew').value;
+  const names = parseList(wizard.newText);
+  if(!names.length){ generatePlan(); return; }
+  wizard.newItemsQueue = names.map(name=>({name, baseIds:[], typeIds:[]}));
+  wizard.newItemsIndex = 0;
+  showCategorizeNewItem();
+}
+function showCategorizeNewItem(){
+  const item = wizard.newItemsQueue[wizard.newItemsIndex];
+  const total = wizard.newItemsQueue.length;
+  const baseChips = state.mealBases.map(b=>`<button type="button" class="chip ${item.baseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleNewItemBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('')
+    + `<button type="button" class="chip" style="border-style:dashed;" onclick="newItemNewBase()">+ new</button>`;
+  const typeChips = state.mealTypes.map(t=>`<button type="button" class="chip type-chip ${item.typeIds.includes(t.id)?'active':''}" data-id="${t.id}" onclick="toggleNewItemType('${t.id}')">${escapeHtml(t.name)}</button>`).join('')
+    + `<button type="button" class="chip type-chip" style="border-style:dashed;" onclick="newItemNewType()">+ new</button>`;
+  showOverlay(`
+    <p class="desc" style="margin-bottom:4px;">New recipe ${wizard.newItemsIndex+1} of ${total}</p>
+    <h2>${escapeHtml(item.name)}</h2>
+    <p class="desc">Quickly tag it so it fits into your rules properly — meal base and type are both optional.</p>
+    <div class="field">
+      <label>Meal base</label>
+      <div class="chip-group" id="newItemBaseChips">${baseChips}</div>
+    </div>
+    <div class="field">
+      <label>Meal type</label>
+      <div class="chip-group" id="newItemTypeChips">${typeChips}</div>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="nextNewItem()">Skip</button>
+      <button class="btn primary" onclick="nextNewItem()">${wizard.newItemsIndex+1<total?'Next':'Plan the week'}</button>
+    </div>
+  `);
+}
+function toggleNewItemBase(id){
+  const item = wizard.newItemsQueue[wizard.newItemsIndex];
+  const i = item.baseIds.indexOf(id);
+  if(i===-1) item.baseIds.push(id); else item.baseIds.splice(i,1);
+  const el = document.querySelector(`#newItemBaseChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function toggleNewItemType(id){
+  const item = wizard.newItemsQueue[wizard.newItemsIndex];
+  const i = item.typeIds.indexOf(id);
+  if(i===-1) item.typeIds.push(id); else item.typeIds.splice(i,1);
+  const el = document.querySelector(`#newItemTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function newItemNewBase(){
+  const name = prompt('New meal base name:');
+  if(!name || !name.trim()) return;
+  const b = getOrCreateMealBase(name.trim());
+  wizard.newItemsQueue[wizard.newItemsIndex].baseIds.push(b.id);
+  showCategorizeNewItem();
+}
+function newItemNewType(){
+  const name = prompt('New meal type name:');
+  if(!name || !name.trim()) return;
+  const t = getOrCreateMealType(name.trim());
+  wizard.newItemsQueue[wizard.newItemsIndex].typeIds.push(t.id);
+  showCategorizeNewItem();
+}
+function nextNewItem(){
+  if(wizard.newItemsIndex+1 < wizard.newItemsQueue.length){
+    wizard.newItemsIndex++;
+    showCategorizeNewItem();
+  } else {
+    generatePlan();
+  }
 }
 
 /* ============================================================
@@ -831,11 +923,12 @@ function generatePlan(){
       priorityPool.push(r);
     });
   }
-  const newItems = parseList(wizard.newText);
+  const newItems = (wizard.newItemsQueue && wizard.newItemsQueue.length) ? wizard.newItemsQueue : parseList(wizard.newText).map(name=>({name, baseIds:[], typeIds:[]}));
   if(newItems.length){
     const newType = getOrCreateMealType('New');
-    newItems.forEach(name=>{
-      const r = {id:uid(), name, baseIds:[], typeIds:[newType.id], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+    newItems.forEach(item=>{
+      const typeIds = Array.from(new Set([...(item.typeIds||[]), newType.id]));
+      const r = {id:uid(), name:item.name, baseIds:item.baseIds||[], typeIds, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
       state.recipes.push(r);
       priorityPool.push(r);
     });
@@ -952,6 +1045,25 @@ function generatePlan(){
         return t && t.slotPref === mealType;
       });
     }
+    // avoid two meals sharing a meal base (e.g. two stews) landing on the same day
+    function hasBaseConflictOnDay(r, date){
+      const day = state.days[date];
+      if(!day || !(r.baseIds||[]).length) return false;
+      return ['lunch','dinner'].some(meal=>{
+        const slot = day[meal];
+        if(slot.status!=='planned' || !slot.recipeId) return false;
+        const other = getRecipe(slot.recipeId);
+        return other && (r.baseIds||[]).some(id=>(other.baseIds||[]).includes(id));
+      });
+    }
+    // try each predicate in order against the queue; first match wins, else just take the front
+    function pickFromQueue(queue, predicates){
+      for(const pred of predicates){
+        const idx = queue.findIndex(pred);
+        if(idx!==-1) return idx;
+      }
+      return 0;
+    }
 
     // place multi-copy recipes first: never twice on the same day, and every copy
     // must land within 2 days of its first appearance so it doesn't sprawl across the week
@@ -962,8 +1074,9 @@ function generatePlan(){
     multiplyRecipes.forEach(r=>{
       if(!openSlots.length) return;
       const copies = decideCopies(r);
-      // prefer to start away from the busiest day, keeping it free for easy meals
-      let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
+      // prefer to start away from the busiest day and away from a same-day base conflict
+      let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
+      if(startIdx===-1) startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
       if(startIdx===-1) startIdx = 0;
       const [startSlot] = openSlots.splice(startIdx,1);
       const startDate = startSlot.date;
@@ -971,7 +1084,8 @@ function generatePlan(){
       const placements = [startSlot];
       const usedDates = new Set([startDate]);
       for(let k=1;k<copies;k++){
-        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate);
+        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
+        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate);
         if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
         if(idx===-1) break; // couldn't fit another copy within the window — place what we can
         const [s] = openSlots.splice(idx,1);
@@ -987,17 +1101,28 @@ function generatePlan(){
 
     // place the remaining single-copy recipes into whatever slots are left —
     // the busiest day gets first refusal on any easy (busy-tagged) recipes,
-    // and other days actively avoid using them up while alternatives exist
+    // other days actively avoid using them up while alternatives exist, and
+    // nothing sharing a meal base with that day's other meal is picked if avoidable
     const queue = singleRecipes.slice();
     const busyModeOn = !!wizard.busyDate;
     openSlots.forEach(slot=>{
       if(!queue.length) return;
       const isBusySlot = busyModeOn && slot.date===wizard.busyDate;
-      let idx = -1;
-      if(isBusySlot) idx = queue.findIndex(r=>hasBusyTag(r));
-      if(idx===-1) idx = queue.findIndex(r=>prefersSlot(r, slot.meal) && (!busyModeOn || isBusySlot || !hasBusyTag(r)));
-      if(idx===-1 && busyModeOn && !isBusySlot) idx = queue.findIndex(r=>!hasBusyTag(r));
-      if(idx===-1) idx = 0;
+      const noConflict = r=>!hasBaseConflictOnDay(r, slot.date);
+      const predicates = [];
+      if(isBusySlot){
+        predicates.push(r=>hasBusyTag(r) && noConflict(r));
+        predicates.push(r=>hasBusyTag(r));
+      }
+      predicates.push(r=>prefersSlot(r, slot.meal) && noConflict(r));
+      if(busyModeOn && !isBusySlot){
+        predicates.push(r=>!hasBusyTag(r) && noConflict(r));
+        predicates.push(r=>!hasBusyTag(r));
+      } else {
+        predicates.push(noConflict);
+      }
+      predicates.push(r=>prefersSlot(r, slot.meal));
+      const idx = pickFromQueue(queue, predicates);
       const [r] = queue.splice(idx,1);
       const day = state.days[slot.date];
       day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
@@ -1326,13 +1451,121 @@ function renderRecipesSection(){
   }).join('');
   return `
     <div class="cat-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:8px;">
         <h3 class="section-title" style="margin:0;">Recipes</h3>
-        <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
+        <div style="display:flex;gap:6px;flex:none;">
+          <button class="btn small" style="background:var(--mustard);color:var(--mustard-ink);" onclick="openBulkImport()">Bulk import</button>
+          <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
+        </div>
       </div>
       <p class="section-desc">Tap a recipe to edit its bases, types, and rotation.</p>
       ${rows || '<p class="hint">No recipes yet — add your first one.</p>'}
     </div>`;
+}
+
+/* ---- bulk import: paste names, categorize each one, then save them all ---- */
+let bulkImport = { queue:[], index:0 };
+function openBulkImport(){
+  showOverlay(`
+    <h2>Bulk import recipes</h2>
+    <p class="desc">Paste recipe names — one per line or separated by commas. You'll quickly tag each one next.</p>
+    <div class="field">
+      <textarea id="bulkImportText" rows="6" placeholder="e.g. Chicken traybake, Fish pie, Veggie chilli"></textarea>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" onclick="startBulkImport()">Next</button>
+    </div>
+  `);
+}
+function startBulkImport(){
+  const names = parseList(document.getElementById('bulkImportText').value);
+  if(!names.length){ closeOverlay(); return; }
+  bulkImport = { queue: names.map(name=>({name, baseIds:[], typeIds:[], frequencyWeeks:1, multiply:false})), index:0 };
+  showBulkImportItem();
+}
+function showBulkImportItem(){
+  const item = bulkImport.queue[bulkImport.index];
+  const total = bulkImport.queue.length;
+  const baseChips = state.mealBases.map(b=>`<button type="button" class="chip ${item.baseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleBulkImportBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('')
+    + `<button type="button" class="chip" style="border-style:dashed;" onclick="bulkImportNewBase()">+ new</button>`;
+  const typeChips = state.mealTypes.map(t=>`<button type="button" class="chip type-chip ${item.typeIds.includes(t.id)?'active':''}" data-id="${t.id}" onclick="toggleBulkImportType('${t.id}')">${escapeHtml(t.name)}</button>`).join('')
+    + `<button type="button" class="chip type-chip" style="border-style:dashed;" onclick="bulkImportNewType()">+ new</button>`;
+  showOverlay(`
+    <p class="desc" style="margin-bottom:4px;">Recipe ${bulkImport.index+1} of ${total}</p>
+    <h2>${escapeHtml(item.name)}</h2>
+    <div class="field">
+      <label>Meal base — pick any that apply</label>
+      <div class="chip-group" id="bulkImportBaseChips">${baseChips}</div>
+    </div>
+    <div class="field">
+      <label>Meal type — pick any that apply</label>
+      <div class="chip-group" id="bulkImportTypeChips">${typeChips}</div>
+    </div>
+    <div class="field">
+      <label>How often can it repeat across weeks?</label>
+      <select id="bulkImportFreq" onchange="bulkImport.queue[bulkImport.index].frequencyWeeks=parseInt(this.value,10)||1">
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${item.frequencyWeeks===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
+      <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" ${item.multiply?'checked':''} onchange="bulkImport.queue[bulkImport.index].multiply=this.checked">
+      can repeat 2-3x in the same week
+    </label>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="skipBulkImportItem()">Skip this one</button>
+      <button class="btn primary" onclick="nextBulkImportItem()">${bulkImport.index+1<total?'Save & next':'Save & finish'}</button>
+    </div>
+  `);
+}
+function toggleBulkImportBase(id){
+  const item = bulkImport.queue[bulkImport.index];
+  const i = item.baseIds.indexOf(id);
+  if(i===-1) item.baseIds.push(id); else item.baseIds.splice(i,1);
+  const el = document.querySelector(`#bulkImportBaseChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function toggleBulkImportType(id){
+  const item = bulkImport.queue[bulkImport.index];
+  const i = item.typeIds.indexOf(id);
+  if(i===-1) item.typeIds.push(id); else item.typeIds.splice(i,1);
+  const el = document.querySelector(`#bulkImportTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function bulkImportNewBase(){
+  const name = prompt('New meal base name:');
+  if(!name || !name.trim()) return;
+  const b = getOrCreateMealBase(name.trim());
+  bulkImport.queue[bulkImport.index].baseIds.push(b.id);
+  showBulkImportItem();
+}
+function bulkImportNewType(){
+  const name = prompt('New meal type name:');
+  if(!name || !name.trim()) return;
+  const t = getOrCreateMealType(name.trim());
+  bulkImport.queue[bulkImport.index].typeIds.push(t.id);
+  showBulkImportItem();
+}
+function skipBulkImportItem(){
+  bulkImport.queue.splice(bulkImport.index,1);
+  finishOrShowNextBulkImportItem();
+}
+function nextBulkImportItem(){
+  bulkImport.index++;
+  finishOrShowNextBulkImportItem();
+}
+function finishOrShowNextBulkImportItem(){
+  if(bulkImport.index >= bulkImport.queue.length){
+    const added = bulkImport.queue.length;
+    bulkImport.queue.forEach(item=>{
+      state.recipes.push({id:uid(), name:item.name, baseIds:item.baseIds, typeIds:item.typeIds, frequencyWeeks:item.frequencyWeeks||1, multiply:!!item.multiply, lastUsedWeekStart:null, ephemeral:false});
+    });
+    bulkImport = { queue:[], index:0 };
+    saveState();
+    closeOverlay();
+    render();
+    toast(added ? `Added ${added} recipe${added===1?'':'s'}` : 'Nothing to add');
+    return;
+  }
+  showBulkImportItem();
 }
 
 let editingRecipeId = null;
