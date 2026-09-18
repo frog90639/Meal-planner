@@ -1295,19 +1295,16 @@ function copyOrShow(url, msg){
 }
 function shareCurrentWeek(){
   if(!firebaseDb){ alert("Live sharing isn't available right now — check your connection and try again."); return; }
-  if(shareMeta.active && shareMeta.weekStart===viewWeekStart){
+  if(shareMeta.active){
     showShareInfo();
     return;
-  }
-  if(shareMeta.active && shareMeta.weekStart!==viewWeekStart){
-    if(!confirm(`You're already live-sharing the week of ${dayShort(shareMeta.weekStart)}. Switch the live link to this week instead?`)) return;
   }
   shareMeta.active = true;
   shareMeta.weekStart = viewWeekStart;
   ensureShareId();
   saveShareMeta();
   refreshLiveShare();
-  copyOrShow(buildShareUrl(), 'Live link copied — it updates automatically as you edit this week');
+  copyOrShow(buildShareUrl(), 'Live link copied — it updates automatically as you edit, and they can swipe through weeks too');
 }
 function syncStatusLine(){
   if(lastSyncStatus.state==='none') return '<p class="desc" style="color:var(--ink-soft);">Not synced yet — edit a meal to trigger the first sync.</p>';
@@ -1323,7 +1320,7 @@ function showShareInfo(){
   const url = buildShareUrl();
   showOverlay(`
     <h2>Live sharing this week</h2>
-    <p class="desc">Anyone with this link sees this week update automatically as you edit it.</p>
+    <p class="desc">Anyone with this link can swipe through your whole plan, updating automatically as you edit it.</p>
     ${syncStatusLine()}
     <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
     <div class="btnrow">
