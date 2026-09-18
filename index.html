@@ -394,6 +394,15 @@ function freqLabel(r){
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function parseList(text){ return (text||'').split(/[,\n]/).map(s=>s.trim()).filter(Boolean); }
 
+const NAME_STOPWORDS = new Set(['with','and','the','style','recipe','dish','from','into','over','your','this','that']);
+function nameTokens(name){
+  return (name||'').toLowerCase().split(/[^a-z0-9]+/).filter(w=>w.length>=4 && !NAME_STOPWORDS.has(w));
+}
+function sharesNameWord(r1, r2){
+  const t2 = new Set(nameTokens(r2.name));
+  return nameTokens(r1.name).some(w=>t2.has(w));
+}
+
 /* ============================================================
    VIEW STATE
    ============================================================ */
@@ -502,6 +511,27 @@ function attachHomeHandlers(){
       }
     }, {passive:true});
   }
+
+  document.querySelectorAll('.meal-row').forEach(row=>{
+    let rsx=0, rsy=0, rdragging=false;
+    row.addEventListener('touchstart', e=>{
+      rsx = e.touches[0].clientX; rsy = e.touches[0].clientY; rdragging=true;
+    }, {passive:true});
+    row.addEventListener('touchend', e=>{
+      if(!rdragging) return; rdragging=false;
+      const dx = e.changedTouches[0].clientX - rsx;
+      const dy = e.changedTouches[0].clientY - rsy;
+      if(dx > 60 && dx > Math.abs(dy)*1.5){
+        const date = row.getAttribute('data-date');
+        const meal = row.getAttribute('data-meal');
+        const slot = peekDay(date)[meal];
+        if(slot.status==='planned' && slot.recipeId){
+          e.stopPropagation();
+          swapMeal(date, meal);
+        }
+      }
+    }, {passive:true});
+  });
 
   const rangeLabel = document.getElementById('weekRangeLabel');
   if(rangeLabel) attachLongPress(rangeLabel, openClearWeekConfirm);
@@ -671,6 +701,56 @@ function assignSlot(date, meal, recipeId, forceStatus){
   refreshLiveShare();
   closeOverlay();
   render();
+}
+
+/* ---- swap: swipe a planned meal right to swing in a different eligible recipe ---- */
+function swapMeal(date, meal){
+  const day = ensureDay(date);
+  const slot = day[meal];
+  if(slot.status!=='planned' || !slot.recipeId) return;
+  const current = getRecipe(slot.recipeId);
+  if(!current){ toast("Can't find that recipe to swap."); return; }
+
+  const season = getSeason(date);
+  function freqOk(r){
+    const freq = r.frequencyWeeks || 1;
+    return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, date) < freq);
+  }
+  function seasonOk(r){
+    return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
+  }
+  function conflictsOnDay(r){
+    return ['lunch','dinner'].some(m=>{
+      if(m===meal) return false; // ignore the slot being replaced itself
+      const other = day[m];
+      if(other.status!=='planned' || !other.recipeId) return false;
+      const o = getRecipe(other.recipeId);
+      if(!o) return false;
+      const baseClash = (r.baseIds||[]).length && (o.baseIds||[]).some(id=>(r.baseIds||[]).includes(id));
+      return baseClash || sharesNameWord(r, o);
+    });
+  }
+
+  const pool = state.recipes.filter(r=>!r.ephemeral && r.id!==current.id);
+  const sameBase = r=>(r.baseIds||[]).some(id=>(current.baseIds||[]).includes(id));
+
+  // best case: same meal-base family, fully eligible, no day conflict
+  let candidates = pool.filter(r=>sameBase(r) && freqOk(r) && seasonOk(r) && !conflictsOnDay(r));
+  // next: any recipe, fully eligible, no day conflict
+  if(!candidates.length) candidates = pool.filter(r=>freqOk(r) && seasonOk(r) && !conflictsOnDay(r));
+  // last resort: relax the day-conflict check rather than refuse to swap at all
+  if(!candidates.length) candidates = pool.filter(r=>freqOk(r) && seasonOk(r));
+  if(!candidates.length) candidates = pool;
+  if(!candidates.length){ toast('No other recipe to swap in.'); return; }
+
+  candidates.sort((a,b)=>{
+    const av=a.lastUsedWeekStart||'0000-00-00', bv=b.lastUsedWeekStart||'0000-00-00';
+    if(av===bv) return Math.random()-0.5;
+    return av<bv?-1:1;
+  });
+  const picked = candidates[0];
+  assignSlot(date, meal, picked.id);
+  toast(`Swapped in ${picked.name}`);
 }
 
 /* ============================================================
@@ -1045,15 +1125,18 @@ function generatePlan(){
         return t && t.slotPref === mealType;
       });
     }
-    // avoid two meals sharing a meal base (e.g. two stews) landing on the same day
+    // avoid two meals sharing a meal base or an obvious shared ingredient (e.g. two stews,
+    // or two titles both mentioning chickpeas) landing on the same day
     function hasBaseConflictOnDay(r, date){
       const day = state.days[date];
-      if(!day || !(r.baseIds||[]).length) return false;
+      if(!day) return false;
       return ['lunch','dinner'].some(meal=>{
         const slot = day[meal];
         if(slot.status!=='planned' || !slot.recipeId) return false;
         const other = getRecipe(slot.recipeId);
-        return other && (r.baseIds||[]).some(id=>(other.baseIds||[]).includes(id));
+        if(!other) return false;
+        const baseClash = (r.baseIds||[]).length && (other.baseIds||[]).some(id=>(r.baseIds||[]).includes(id));
+        return baseClash || sharesNameWord(r, other);
       });
     }
     // try each predicate in order against the queue; first match wins, else just take the front
