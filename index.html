@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Meal Plan</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
@@ -57,7 +56,6 @@
   .iconbtn:active{transform:scale(.94);}
 
   /* Stamp-style plan button */
-  .plan-row{display:flex;gap:10px;align-items:stretch;margin:6px 0 20px;}
   .stamp-btn{
     display:block;flex:1;text-align:center;
     background:var(--brick);color:#FBF4E6;
@@ -73,13 +71,6 @@
   }
   .stamp-btn:active{transform:rotate(-0.6deg) scale(.98);}
   .stamp-btn .sub{display:block;font-family:var(--font-body);font-weight:400;font-size:11.5px;opacity:.85;margin-top:2px;letter-spacing:.02em;}
-  .dl-btn{
-    flex:none;width:56px;
-    background:var(--bg-elevated);border:2px solid var(--board-line);border-radius:10px;
-    display:flex;align-items:center;justify-content:center;font-size:21px;color:var(--ink);
-    box-shadow:var(--shadow);
-  }
-  .dl-btn:active{transform:scale(.95);}
 
   /* Week nav */
   .weeknav{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;padding:0 2px;}
@@ -442,6 +433,11 @@ function renderHome(){
 
   const hint = !hasAnyContent ? `<div class="empty-week-hint">Nothing planned yet for this week.<br>Tap a meal to add one, or use Plan meals above.</div>` : '';
 
+  const thisMonday = mondayOnOrBefore(todayISO());
+  let weekLabel = '';
+  if(viewWeekStart===thisMonday) weekLabel = 'This week';
+  else if(viewWeekStart===addDays(thisMonday,7)) weekLabel = 'Next week';
+
   return `
     <div class="topbar">
       <div class="brand">
@@ -453,15 +449,15 @@ function renderHome(){
         <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
       </div>
     </div>
-    <div class="plan-row">
-      <button class="stamp-btn" onclick="openWizard()">Plan meals
-        <span class="sub">how long, days out, cravings, freezer, new</span>
-      </button>
-      <button class="dl-btn" onclick="downloadWeekPdf()" aria-label="Download this week as PDF" title="Download this week as PDF">⬇</button>
-    </div>
+    <button class="stamp-btn" onclick="openWizard()" style="display:block;width:100%;margin:6px 0 20px;">Plan meals
+      <span class="sub">how long, days out, cravings, freezer, new</span>
+    </button>
     <div class="weeknav">
       <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
-      <div class="range" id="weekRangeLabel">${firstLabel} – ${lastLabel}<small>swipe to change week · hold to clear</small></div>
+      <div class="range" id="weekRangeLabel">
+        ${weekLabel ? `<strong style="display:block;color:var(--brick-dark);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">${weekLabel}</strong>` : ''}
+        ${firstLabel} – ${lastLabel}<small>swipe to change week · hold to clear</small>
+      </div>
       <button class="navbtn" onclick="shiftWeek(7)">›</button>
     </div>
     <div class="week-wrap" id="weekWrap">
@@ -1870,95 +1866,6 @@ function importData(evt){
   };
   reader.readAsText(file);
   evt.target.value = '';
-}
-
-/* ============================================================
-   PDF EXPORT
-   ============================================================ */
-function downloadWeekPdf(){
-  if(!window.jspdf){
-    alert('The PDF library didn\'t load — check your internet connection and try again.');
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'pt', format:'a4' });
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 54;
-  const ink = [51,41,28], soft = [140,124,99], brick=[214,84,55], sage=[24,110,99], line=[236,222,192];
-  let y = 64;
-
-  const days = weekDates(viewWeekStart);
-  const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'});
-  const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric',year:'numeric'});
-
-  doc.setFont('times','bold');
-  doc.setFontSize(24);
-  doc.setTextColor(...ink);
-  doc.text('Meal Plan', margin, y);
-  y += 20;
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(11.5);
-  doc.setTextColor(...soft);
-  doc.text(`${firstLabel} \u2013 ${lastLabel}`, margin, y);
-  y += 18;
-  doc.setDrawColor(...line);
-  doc.setLineWidth(1);
-  doc.line(margin, y, pageWidth-margin, y);
-  y += 28;
-
-  days.forEach((date)=>{
-    const d = peekDay(date);
-    if(y > pageHeight - 100){ doc.addPage(); y = 64; }
-
-    doc.setFont('times','bold');
-    doc.setFontSize(15);
-    doc.setTextColor(...ink);
-    doc.text(dayName(date), margin, y);
-    const nameWidth = doc.getTextWidth(dayName(date));
-    doc.setFont('helvetica','normal');
-    doc.setFontSize(10.5);
-    doc.setTextColor(...soft);
-    doc.text(dayShort(date), margin + nameWidth + 10, y);
-    y += 20;
-
-    ['lunch','dinner'].forEach(meal=>{
-      const slot = d[meal];
-      doc.setFont('helvetica','bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...(meal==='lunch'?brick:sage));
-      doc.text(meal.toUpperCase(), margin + 14, y);
-
-      let label, italic=false;
-      if(slot.status==='out'){ label = 'Out — no meal needed'; italic=true; }
-      else if(slot.status==='planned'){
-        const recipe = slot.recipeId ? getRecipe(slot.recipeId) : null;
-        const name = slot.recipeName || (recipe ? recipe.name : '');
-        const baseTxt = slot.baseLabel || (recipe ? baseNames(recipe).join(', ') : '');
-        label = name ? (name + (baseTxt ? `  (${baseTxt})` : '')) : 'Not planned';
-        if(!name) italic = true;
-      } else { label = 'Not planned'; italic=true; }
-
-      doc.setFont('helvetica', italic ? 'italic' : 'normal');
-      doc.setFontSize(11.5);
-      doc.setTextColor(...ink);
-      doc.text(label, margin + 78, y);
-      y += 18;
-    });
-
-    y += 8;
-    doc.setDrawColor(...line);
-    doc.setLineWidth(0.75);
-    doc.line(margin, y, pageWidth-margin, y);
-    y += 20;
-  });
-
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor(...soft);
-  doc.text('Meal Plan', margin, pageHeight-30);
-
-  doc.save(`meal-plan-${viewWeekStart}.pdf`);
 }
 
 /* ---------- init ---------- */
