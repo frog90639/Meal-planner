@@ -1278,11 +1278,13 @@ function simplifySlot(s){
 function buildShareUrl(){
   return `${location.origin}${location.pathname}#live=${encodeURIComponent(shareMeta.shareId)}`;
 }
+let lastSyncStatus = { state:'none', time:null, error:null }; // 'none' | 'ok' | 'error'
 function refreshLiveShare(){
   if(!shareMeta.active || !shareMeta.shareId || !firebaseDb) return;
   firebaseDb.collection('sharedWeeks').doc(shareMeta.shareId)
     .set({ days: state.days, viewWeekStart: shareMeta.weekStart, updatedAt: Date.now() })
-    .catch(()=>{ /* best-effort; app keeps working offline either way */ });
+    .then(()=>{ lastSyncStatus = { state:'ok', time:Date.now(), error:null }; })
+    .catch((err)=>{ lastSyncStatus = { state:'error', time:Date.now(), error:(err&&err.message)||String(err) }; });
 }
 function copyOrShow(url, msg){
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -1307,22 +1309,35 @@ function shareCurrentWeek(){
   refreshLiveShare();
   copyOrShow(buildShareUrl(), 'Live link copied — it updates automatically as you edit this week');
 }
+function syncStatusLine(){
+  if(lastSyncStatus.state==='none') return '<p class="desc" style="color:var(--ink-soft);">Not synced yet — edit a meal to trigger the first sync.</p>';
+  const when = new Date(lastSyncStatus.time).toLocaleTimeString();
+  if(lastSyncStatus.state==='ok') return `<p class="desc" style="color:var(--sage-dark);">✓ Synced successfully at ${when}</p>`;
+  return `<p class="desc" style="color:var(--brick-dark);">✕ Sync FAILED at ${when} — ${escapeHtml(lastSyncStatus.error||'unknown error')}<br>This usually means the Firestore security rules don't match. Check them in the Firebase console.</p>`;
+}
+function refreshShareInfoAfterSync(){
+  refreshLiveShare();
+  setTimeout(()=>{ if(shareMeta.active) showShareInfo(); }, 700);
+}
 function showShareInfo(){
   const url = buildShareUrl();
   showOverlay(`
     <h2>Live sharing this week</h2>
     <p class="desc">Anyone with this link sees this week update automatically as you edit it.</p>
+    ${syncStatusLine()}
     <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
     <div class="btnrow">
-      <button class="btn danger" onclick="stopLiveShare()">Stop sharing</button>
-      <button class="btn primary" onclick="closeOverlay()">Done</button>
+      <button class="btn ghost" onclick="refreshShareInfoAfterSync()">Test sync now</button>
+      <button class="btn danger" onclick="stopLiveShare()">Stop</button>
     </div>
+    <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Done</button></div>
   `);
 }
 function showShareFallback(url, msg){
   showOverlay(`
     <h2>Live sharing this week</h2>
     <p class="desc">${escapeHtml(msg||'Copy this link — it updates automatically as you edit this week.')}</p>
+    ${syncStatusLine()}
     <div class="field"><textarea rows="4" readonly onclick="this.select()">${escapeHtml(url)}</textarea></div>
     <div class="btnrow">
       <button class="btn danger" onclick="stopLiveShare()">Stop sharing</button>
