@@ -407,7 +407,7 @@ function sharesNameWord(r1, r2){
    VIEW STATE
    ============================================================ */
 let view = 'home';
-let viewWeekStart = state.lastViewedWeekStart || mondayOnOrBefore(todayISO());
+let viewWeekStart = mondayOnOrBefore(state.lastViewedWeekStart || todayISO());
 let currentSlotDate = null, currentSlotMeal = null;
 
 function render(){
@@ -1063,6 +1063,30 @@ function generatePlan(){
     const selected = [], selectedIds = new Set();
     let unitsUsed = 0;
     const baseCounts = {}, typeCounts = {};
+
+    // "weekly" targets/minimums should respect the whole Mon-Sun week(s) this plan touches,
+    // not treat a partial stretch (e.g. planning just 3 days) as its own isolated week —
+    // so pre-count whatever's already planned on the surrounding days of those calendar weeks
+    const touchedWeekStarts = new Set(days.map(d=>mondayOnOrBefore(d)));
+    const surroundingDates = [];
+    touchedWeekStarts.forEach(ws=>{
+      weekDates(ws).forEach(d=>{ if(!days.includes(d)) surroundingDates.push(d); });
+    });
+    surroundingDates.forEach(d=>{
+      const existing = state.days[d];
+      if(!existing) return;
+      ['lunch','dinner'].forEach(m=>{
+        const slot = existing[m];
+        if(slot && slot.status==='planned' && slot.recipeId){
+          const r = getRecipe(slot.recipeId);
+          if(r){
+            (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+1);
+            (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+1);
+          }
+        }
+      });
+    });
+
     function tryAdd(r){
       if(selectedIds.has(r.id) || unitsUsed>=remainingSlots.length) return false;
       const copies = decideCopies(r);
@@ -1213,8 +1237,8 @@ function generatePlan(){
     });
   }
 
-  state.lastViewedWeekStart = startISO;
-  viewWeekStart = startISO;
+  state.lastViewedWeekStart = mondayOnOrBefore(startISO);
+  viewWeekStart = mondayOnOrBefore(startISO);
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -1251,25 +1275,13 @@ function simplifySlot(s){
   if(s.status==='planned') return {status:'planned', name:s.recipeName||'', base:s.baseLabel||''};
   return {status:'empty'};
 }
-function buildWeekPayload(weekStart){
-  const days = weekDates(weekStart);
-  return {
-    start: days[0],
-    end: days[6],
-    days: days.map(date=>{
-      const d = peekDay(date);
-      return { date, lunch: simplifySlot(d.lunch), dinner: simplifySlot(d.dinner) };
-    }),
-    updatedAt: Date.now()
-  };
-}
 function buildShareUrl(){
   return `${location.origin}${location.pathname}#live=${encodeURIComponent(shareMeta.shareId)}`;
 }
 function refreshLiveShare(){
   if(!shareMeta.active || !shareMeta.shareId || !firebaseDb) return;
   firebaseDb.collection('sharedWeeks').doc(shareMeta.shareId)
-    .set(buildWeekPayload(shareMeta.weekStart))
+    .set({ days: state.days, viewWeekStart: shareMeta.weekStart, updatedAt: Date.now() })
     .catch(()=>{ /* best-effort; app keeps working offline either way */ });
 }
 function copyOrShow(url, msg){
@@ -1343,7 +1355,7 @@ function renderSharedView(payload, live){
   app.innerHTML = `
     <div class="topbar">
       <div class="brand">
-        <span class="kicker">shared meal plan · ${live?'live':'view only'}</span>
+        <span class="kicker">shared meal plan · view only</span>
         <h1>Meal Plan</h1>
       </div>
     </div>
@@ -1351,7 +1363,7 @@ function renderSharedView(payload, live){
       <div class="range" style="margin:0 auto;">${firstLabel} – ${lastLabel}</div>
     </div>
     <div class="week-wrap">${daysHtml}</div>
-    <p class="hint">${live ? "This updates automatically as they edit — nothing here can be edited by you." : "This is a snapshot shared as a link — nothing here can be edited, and it won't reflect later changes."}</p>
+    <p class="hint">This is a snapshot shared as a link — nothing here can be edited, and it won't reflect later changes.</p>
   `;
 }
 function renderSharedMessage(text){
@@ -1360,15 +1372,85 @@ function renderSharedMessage(text){
     <p class="hint" style="margin-top:40px;">${escapeHtml(text)}</p>
   `;
 }
+
+/* ---- live view: full days map synced from Firestore, swipeable like Home ---- */
+let liveViewDays = {};
+let liveViewWeekStart = null;
+function peekLiveDay(dateISO){ return liveViewDays[dateISO] || {lunch:emptySlot(), dinner:emptySlot()}; }
 function listenLiveShare(shareId){
   renderSharedMessage('Loading…');
   if(!firebaseDb){ renderSharedMessage("Couldn't connect to load this shared plan."); return; }
   firebaseDb.collection('sharedWeeks').doc(shareId).onSnapshot(doc=>{
     if(!doc.exists){ renderSharedMessage('This link is no longer being shared.'); return; }
-    renderSharedView(doc.data(), true);
+    const data = doc.data();
+    liveViewDays = data.days || {};
+    if(!liveViewWeekStart){
+      liveViewWeekStart = data.viewWeekStart || mondayOnOrBefore(todayISO());
+    }
+    renderLiveShareHome();
   }, ()=>{
     renderSharedMessage("Couldn't load this shared plan.");
   });
+}
+function shiftLiveWeek(n){
+  liveViewWeekStart = addDays(liveViewWeekStart, n);
+  renderLiveShareHome();
+}
+function renderLiveShareHome(){
+  const days = weekDates(liveViewWeekStart);
+  const firstLabel = fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const lastLabel = fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'});
+  const daysHtml = days.map(date=>{
+    const d = peekLiveDay(date);
+    return `
+    <div class="daycard">
+      <div class="dayhead">
+        <span class="dname">${dayName(date)}</span>
+        <span class="ddate">${dayShort(date)}</span>
+      </div>
+      ${renderReadOnlyMealRow(d.lunch,'lunch')}
+      ${renderReadOnlyMealRow(d.dinner,'dinner')}
+    </div>`;
+  }).join('');
+  document.getElementById('app').innerHTML = `
+    <div class="topbar">
+      <div class="brand">
+        <span class="kicker">shared meal plan · live</span>
+        <h1>Meal Plan</h1>
+      </div>
+    </div>
+    <div class="weeknav">
+      <button class="navbtn" onclick="shiftLiveWeek(-7)">‹</button>
+      <div class="range">${firstLabel} – ${lastLabel}<small>swipe to change week</small></div>
+      <button class="navbtn" onclick="shiftLiveWeek(7)">›</button>
+    </div>
+    <div class="week-wrap" id="liveWeekWrap">${daysHtml}</div>
+    <p class="hint">This updates automatically as they edit — nothing here can be edited by you.</p>
+  `;
+  attachLiveSwipeHandlers();
+}
+function attachLiveSwipeHandlers(){
+  const wrap = document.getElementById('liveWeekWrap');
+  if(!wrap) return;
+  let sx=0, sy=0, dragging=false;
+  wrap.addEventListener('touchstart', e=>{
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; dragging=true;
+  }, {passive:true});
+  wrap.addEventListener('touchend', e=>{
+    if(!dragging) return; dragging=false;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
+      shiftLiveWeek(dx < 0 ? 7 : -7);
+    }
+  }, {passive:true});
+}
+function renderReadOnlyMealRow(slot, meal){
+  let inner;
+  if(slot.status==='out') inner = `<div class="slot out">Out — no meal needed</div>`;
+  else if(slot.status==='planned') inner = `<div class="slot planned"><span class="rname">${escapeHtml(slot.recipeName||'')}</span><span class="rcat">${escapeHtml(slot.baseLabel||'')}</span></div>`;
+  else inner = `<div class="slot empty">Not planned</div>`;
+  return `<div class="meal-row"><span class="meal-label">${meal}</span>${inner}</div>`;
 }
 function renderSharedMealRow(meal, slot){
   let inner;
