@@ -206,20 +206,20 @@ function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toStrin
 function seedDefaultState(){
   const mealBases = ['Pasta','Rice','Potato','Noodles','Bread','Salad'].map(name=>({id:uid(), name, weeklyTarget:1, excludedSeasons:[]}));
   const mealTypes = [
-    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true},
-    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false},
-    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false},
-    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false}
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true, manualOnly:false},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false, manualOnly:false},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false, manualOnly:false}
   ];
   return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null };
 }
 function migrateFromV1(old){
   const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, excludedSeasons:[]}));
   const mealTypes = [
-    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true},
-    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false},
-    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false},
-    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false}
+    {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true, manualOnly:false},
+    {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false},
+    {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false, manualOnly:false},
+    {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false, manualOnly:false}
   ];
   const recipes = (old.recipes||[]).map(r=>({
     id:r.id, name:r.name,
@@ -370,7 +370,7 @@ function getOrCreateMealBase(name){
 }
 function getOrCreateMealType(name){
   let t = state.mealTypes.find(t=>t.name.toLowerCase()===name.toLowerCase());
-  if(!t){ t = {id:uid(), name, weeklyMin:0, slotPref:null}; state.mealTypes.push(t); }
+  if(!t){ t = {id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false}; state.mealTypes.push(t); }
   return t;
 }
 function removeIfEphemeral(r){
@@ -727,7 +727,11 @@ function swapMeal(date, meal){
     });
   }
 
-  const pool = state.recipes.filter(r=>!r.ephemeral && r.id!==current.id);
+  function isManualOnly(r){
+    return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
+  }
+
+  const pool = state.recipes.filter(r=>!r.ephemeral && r.id!==current.id && !isManualOnly(r));
   const sameBase = r=>(r.baseIds||[]).some(id=>(current.baseIds||[]).includes(id));
 
   // best case: same meal-base family, fully eligible, no day conflict
@@ -1041,7 +1045,10 @@ function generatePlan(){
       });
     }
 
-    let candidates = state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && freqOk(r) && seasonOk(r));
+    function isManualOnly(r){
+      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
+    }
+    let candidates = state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !isManualOnly(r) && freqOk(r) && seasonOk(r));
     candidates = lruSort(candidates.filter(r=>!fancy.length || (r.baseIds||[]).some(id=>fancy.includes(id))));
 
     const copiesFor = new Map();
@@ -1131,7 +1138,7 @@ function generatePlan(){
     // pass 4: if "fancying this week" left too few options to fill the week, fall back
     // to the full recipe pool (still respecting frequency/season) rather than leaving gaps
     if(unitsUsed < remainingSlots.length && fancy.length){
-      const fallback = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !selectedIds.has(r.id) && freqOk(r) && seasonOk(r)));
+      const fallback = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !selectedIds.has(r.id) && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
       for(const r of fallback){
         if(unitsUsed>=remainingSlots.length) break;
         tryAdd(r);
@@ -1569,11 +1576,15 @@ function renderMealTypesSection(){
         <input type="checkbox" ${t.busyDay?'checked':''} onchange="setTypeBusyDay('${t.id}',this.checked)">
         use for busiest-day meals
       </label>
+      <label class="busy-toggle">
+        <input type="checkbox" ${t.manualOnly?'checked':''} onchange="setTypeManualOnly('${t.id}',this.checked)">
+        only on selection — never auto-pulled, only when manually picked
+      </label>
     </div>`).join('');
   return `
     <div class="cat-card">
       <h3 class="section-title">Meal types</h3>
-      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on.</p>
+      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
       ${rows || '<p class="hint">No meal types yet.</p>'}
       <div class="add-cat-form">
         <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
@@ -1585,7 +1596,7 @@ function addMealType(){
   const input = document.getElementById('newTypeName');
   const name = input.value.trim();
   if(!name) return;
-  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false});
+  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false});
   saveState(); render();
 }
 function renameMealType(id, name){
@@ -1597,6 +1608,9 @@ function bumpTypeMin(id, delta){
 }
 function setTypeSlotPref(id, val){
   const t = getMealType(id); if(t){ t.slotPref = val || null; saveState(); }
+}
+function setTypeManualOnly(id, checked){
+  const t = getMealType(id); if(t){ t.manualOnly = !!checked; saveState(); }
 }
 function setTypeBusyDay(id, checked){
   const t = getMealType(id); if(t){ t.busyDay = !!checked; saveState(); }
