@@ -481,7 +481,7 @@ function renderMealRow(date, meal, slot){
   } else {
     inner = `<div class="slot empty">+ add meal</div>`;
   }
-  return `<div class="meal-row" data-date="${date}" data-meal="${meal}" onclick="openSlotEditor('${date}','${meal}')">
+  return `<div class="meal-row" data-date="${date}" data-meal="${meal}">
     <span class="meal-label">${meal}</span>${inner}
   </div>`;
 }
@@ -523,6 +523,7 @@ function attachHomeHandlers(){
     }, {passive:true});
   }
 
+  let lastTapRow = null, lastTapTime = 0, pendingTapTimer = null;
   document.querySelectorAll('.meal-row').forEach(row=>{
     let rsx=0, rsy=0, rdragging=false;
     row.addEventListener('touchstart', e=>{
@@ -542,6 +543,29 @@ function attachHomeHandlers(){
         }
       }
     }, {passive:true});
+
+    // single tap opens the slot editor; a second tap within the window opens the
+    // recipe editor for whatever's planned there instead — held briefly so we can tell them apart
+    row.addEventListener('click', ()=>{
+      const date = row.getAttribute('data-date');
+      const meal = row.getAttribute('data-meal');
+      const now = Date.now();
+      if(lastTapRow===row && (now-lastTapTime)<350){
+        clearTimeout(pendingTapTimer);
+        lastTapRow = null; lastTapTime = 0;
+        const slot = peekDay(date)[meal];
+        if(slot.status==='planned' && slot.recipeId){
+          openRecipeEditor(slot.recipeId);
+        } else {
+          openSlotEditor(date, meal);
+        }
+        return;
+      }
+      lastTapRow = row; lastTapTime = now;
+      pendingTapTimer = setTimeout(()=>{
+        if(lastTapRow===row){ lastTapRow = null; openSlotEditor(date, meal); }
+      }, 300);
+    });
   });
 
   const rangeLabel = document.getElementById('weekRangeLabel');
