@@ -420,7 +420,7 @@ function renderHome(){
   const daysHtml = days.map(date=>{
     const d = peekDay(date);
     return `
-    <div class="daycard">
+    <div class="daycard"${date===today?' id="todayCard"':''}>
       <div class="dayhead">
         <span class="dname">${dayName(date)}</span>
         <span class="ddate">${dayShort(date)}</span>
@@ -445,6 +445,8 @@ function renderHome(){
         <h1>Meal Plan</h1>
       </div>
       <div style="display:flex;gap:8px;">
+        <button class="iconbtn" onclick="jumpToThisWeek()" aria-label="Jump to this week" title="This week">🗓️</button>
+        <button class="iconbtn" onclick="jumpToToday()" aria-label="Jump to today" title="Today">📍</button>
         <button class="iconbtn" onclick="shareCurrentWeek()" aria-label="Live-share this week" title="Live-share this week">🔗</button>
         <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
       </div>
@@ -489,6 +491,19 @@ function shiftWeek(n){
   state.lastViewedWeekStart = viewWeekStart;
   saveState();
   render();
+}
+function jumpToThisWeek(){
+  viewWeekStart = mondayOnOrBefore(todayISO());
+  state.lastViewedWeekStart = viewWeekStart;
+  saveState();
+  render();
+}
+function jumpToToday(){
+  jumpToThisWeek();
+  setTimeout(()=>{
+    const el = document.getElementById('todayCard');
+    if(el && el.scrollIntoView) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 50);
 }
 
 function attachHomeHandlers(){
@@ -1162,16 +1177,17 @@ function generatePlan(){
     }
 
     // note any rule that couldn't be fully met, so we can tell the person what's missing
+    // (skip bases that are deliberately out of season this week — nothing to add there)
     state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
       const have = typeCounts[t.id]||0;
       if(have < t.weeklyMin){
-        shortfalls.push(`"${t.name}" — wanted ${t.weeklyMin}/wk, only had ${have} available. Add more recipes tagged "${t.name}".`);
+        shortfalls.push({kind:'type', id:t.id, name:t.name, message:`"${t.name}" — wanted ${t.weeklyMin}/wk, only had ${have} available.`});
       }
     });
-    state.mealBases.filter(b=>b.weeklyTarget>0).forEach(b=>{
+    state.mealBases.filter(b=>b.weeklyTarget>0 && !(b.excludedSeasons||[]).includes(season)).forEach(b=>{
       const have = baseCounts[b.id]||0;
       if(have < b.weeklyTarget){
-        shortfalls.push(`"${b.name}" — wanted ${b.weeklyTarget}/wk, only had ${have} available. Add more recipes using "${b.name}".`);
+        shortfalls.push({kind:'base', id:b.id, name:b.name, message:`"${b.name}" — wanted ${b.weeklyTarget}/wk, only had ${have} available.`});
       }
     });
 
@@ -1280,12 +1296,12 @@ function generatePlan(){
   const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
 
   if(shortfalls.length){
-    const list = shortfalls.map(s=>`<li style="margin-bottom:8px;">${escapeHtml(s)}</li>`).join('');
+    const list = shortfalls.map(s=>`<li style="margin-bottom:8px;cursor:pointer;color:var(--brick-dark);text-decoration:underline;" onclick="openRecipeEditorFromShortfall('${s.kind}','${s.id}')">${escapeHtml(s.message)} <span style="font-size:11px;color:var(--ink-soft);text-decoration:none;">— tap to add a recipe</span></li>`).join('');
     showOverlay(`
       <h2>Plan complete — a few gaps</h2>
       <p class="desc">Planned ${filledCount} of ${slotOrder.length} meals. These rules couldn't be fully met this time:</p>
-      <ul style="padding-left:18px;margin:0 0 4px;font-size:13.5px;color:var(--ink);line-height:1.4;">${list}</ul>
-      <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Got it</button></div>
+      <ul style="padding-left:18px;margin:0 0 4px;font-size:13.5px;line-height:1.4;">${list}</ul>
+      <div class="btnrow"><button class="btn ghost" onclick="closeOverlay()">Got it</button></div>
     `);
   } else {
     toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Plan complete');
@@ -1797,9 +1813,14 @@ function finishOrShowNextBulkImportItem(){
 }
 
 let editingRecipeId = null;
-function openRecipeEditor(id){
+function openRecipeEditorFromShortfall(kind, id){
+  closeOverlay();
+  if(kind==='base') openRecipeEditor(null, {baseIds:[id], typeIds:[]});
+  else openRecipeEditor(null, {baseIds:[], typeIds:[id]});
+}
+function openRecipeEditor(id, preselect){
   editingRecipeId = id;
-  const r = id ? getRecipe(id) : {name:'', baseIds:[], typeIds:[], frequencyWeeks:1, multiply:false};
+  const r = id ? getRecipe(id) : {name:'', baseIds:(preselect&&preselect.baseIds)||[], typeIds:(preselect&&preselect.typeIds)||[], frequencyWeeks:1, multiply:false};
   window.__editorDraft = { baseIds:[...(r.baseIds||[])], typeIds:[...(r.typeIds||[])] };
 
   const baseChips = state.mealBases.map(b=>`<button type="button" class="chip ${(r.baseIds||[]).includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleEditorBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('')
