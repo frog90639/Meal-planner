@@ -905,7 +905,7 @@ function finishNewRecipesStep(){
   wizard.newText = document.getElementById('wizNew').value;
   const names = parseList(wizard.newText);
   if(!names.length){ generatePlan(); return; }
-  wizard.newItemsQueue = names.map(name=>({name, baseIds:[], typeIds:[]}));
+  wizard.newItemsQueue = names.map(name=>({name, baseIds:[], typeIds:[], frequencyWeeks:1, multiply:false}));
   wizard.newItemsIndex = 0;
   showCategorizeNewItem();
 }
@@ -919,7 +919,7 @@ function showCategorizeNewItem(){
   showOverlay(`
     <p class="desc" style="margin-bottom:4px;">New recipe ${wizard.newItemsIndex+1} of ${total}</p>
     <h2>${escapeHtml(item.name)}</h2>
-    <p class="desc">Quickly tag it so it fits into your rules properly — meal base and type are both optional.</p>
+    <p class="desc">Quickly tag it so it fits into your rules properly — all optional.</p>
     <div class="field">
       <label>Meal base</label>
       <div class="chip-group" id="newItemBaseChips">${baseChips}</div>
@@ -928,11 +928,27 @@ function showCategorizeNewItem(){
       <label>Meal type</label>
       <div class="chip-group" id="newItemTypeChips">${typeChips}</div>
     </div>
+    <div class="field">
+      <label>How often can it repeat across weeks?</label>
+      <select id="newItemFreq" onchange="setNewItemFreq(this.value)">
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(item.frequencyWeeks||1)===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+      </select>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
+      <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" ${item.multiply?'checked':''} onchange="setNewItemMultiply(this.checked)">
+      can repeat 2-3x in the same week
+    </label>
     <div class="btnrow">
       <button class="btn ghost" onclick="nextNewItem()">Skip</button>
       <button class="btn primary" onclick="nextNewItem()">${wizard.newItemsIndex+1<total?'Next':'Plan the week'}</button>
     </div>
   `);
+}
+function setNewItemFreq(val){
+  wizard.newItemsQueue[wizard.newItemsIndex].frequencyWeeks = parseInt(val,10)||1;
+}
+function setNewItemMultiply(checked){
+  wizard.newItemsQueue[wizard.newItemsIndex].multiply = !!checked;
 }
 function toggleNewItemBase(id){
   const item = wizard.newItemsQueue[wizard.newItemsIndex];
@@ -973,7 +989,6 @@ function nextNewItem(){
    PLAN GENERATION
    ============================================================ */
 function generatePlan(){
-  wizard.newText = document.getElementById('wizNew').value;
   const startISO = wizard.startDate;
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
@@ -1025,6 +1040,7 @@ function generatePlan(){
   }
   priorityPool.slice(0,priorityCount).forEach(r=>removeIfEphemeral(r));
   const remainingSlots = slotOrder.slice(priorityCount);
+  const shortfalls = [];
 
   if(remainingSlots.length){
     const season = getSeason(startISO);
@@ -1145,6 +1161,20 @@ function generatePlan(){
       }
     }
 
+    // note any rule that couldn't be fully met, so we can tell the person what's missing
+    state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
+      const have = typeCounts[t.id]||0;
+      if(have < t.weeklyMin){
+        shortfalls.push(`"${t.name}" — wanted ${t.weeklyMin}/wk, only had ${have} available. Add more recipes tagged "${t.name}".`);
+      }
+    });
+    state.mealBases.filter(b=>b.weeklyTarget>0).forEach(b=>{
+      const have = baseCounts[b.id]||0;
+      if(have < b.weeklyTarget){
+        shortfalls.push(`"${b.name}" — wanted ${b.weeklyTarget}/wk, only had ${have} available. Add more recipes using "${b.name}".`);
+      }
+    });
+
     // a recipe tagged "prefers lunch/dinner" gets first refusal on that slot type (soft, not a hard rule)
     function prefersSlot(r, mealType){
       return (r.typeIds||[]).some(id=>{
@@ -1248,7 +1278,18 @@ function generatePlan(){
   render();
 
   const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
-  toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Plan complete');
+
+  if(shortfalls.length){
+    const list = shortfalls.map(s=>`<li style="margin-bottom:8px;">${escapeHtml(s)}</li>`).join('');
+    showOverlay(`
+      <h2>Plan complete — a few gaps</h2>
+      <p class="desc">Planned ${filledCount} of ${slotOrder.length} meals. These rules couldn't be fully met this time:</p>
+      <ul style="padding-left:18px;margin:0 0 4px;font-size:13.5px;color:var(--ink);line-height:1.4;">${list}</ul>
+      <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Got it</button></div>
+    `);
+  } else {
+    toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — fill the rest manually` : 'Plan complete');
+  }
 }
 
 /* ============================================================
