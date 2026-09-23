@@ -647,6 +647,13 @@ function openSlotEditor(date, meal){
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
     </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Just write it in — quick, one-off, no need to save it as a recipe</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="freeTextInput" placeholder="e.g. Leftovers, Mum's, takeaway" style="flex:1;padding:10px 12px;border-radius:8px;border:1.5px solid var(--paper-line);font-size:14px;">
+        <button class="btn primary small" onclick="assignFreeText('${date}','${meal}')">Use</button>
+      </div>
+    </div>
     <input type="text" id="slotSearch" placeholder="Search recipes…" oninput="filterSlotRecipes()" style="width:100%;padding:10px 12px;border-radius:8px;border:1.5px solid var(--paper-line);font-size:14px;margin-bottom:14px;">
     <div id="slotRecipeList">
       ${baseSections}${otherSection}${noneMsg}
@@ -732,6 +739,17 @@ function assignSlot(date, meal, recipeId, forceStatus){
     day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (baseNames(r).join(', ')||null) : null};
     if(r){ r.lastUsedWeekStart = date; removeIfEphemeral(r); }
   }
+  saveState();
+  refreshLiveShare();
+  closeOverlay();
+  render();
+}
+function assignFreeText(date, meal){
+  const input = document.getElementById('freeTextInput');
+  const text = input.value.trim();
+  if(!text){ input.focus(); return; }
+  const day = ensureDay(date);
+  day[meal] = {status:'planned', recipeId:null, recipeName:text, baseLabel:null};
   saveState();
   refreshLiveShare();
   closeOverlay();
