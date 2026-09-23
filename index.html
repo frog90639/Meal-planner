@@ -1128,15 +1128,13 @@ function proceedGeneratePlan(overwriteAll){
   const shortfalls = [];
 
   if(remainingSlots.length){
-    const season = getSeason(startISO);
     const fancy = wizard.fancyBaseIds || [];
 
-    function seasonOk(r){
-      return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
+    function isManualOnly(r){
+      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
     }
-    function freqOk(r){
-      const freq = r.frequencyWeeks || 1;
-      return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, startISO) < freq);
+    function hasBusyTag(r){
+      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.busyDay; });
     }
     function lruSort(list){
       return list.sort((a,b)=>{
@@ -1145,123 +1143,6 @@ function proceedGeneratePlan(overwriteAll){
         return av<bv?-1:1;
       });
     }
-
-    function isManualOnly(r){
-      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
-    }
-    let candidatesAll = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
-    let candidates = fancy.length ? candidatesAll.filter(r=>(r.baseIds||[]).some(id=>fancy.includes(id))) : candidatesAll;
-
-    const copiesFor = new Map();
-    function decideCopies(r){
-      if(copiesFor.has(r.id)) return copiesFor.get(r.id);
-      const c = r.multiply ? (Math.random()<0.5?2:3) : 1;
-      copiesFor.set(r.id, c);
-      return c;
-    }
-
-    function hasBusyTag(r){
-      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.busyDay; });
-    }
-
-    const selected = [], selectedIds = new Set();
-    let unitsUsed = 0;
-    const baseCounts = {}, typeCounts = {};
-
-    // "weekly" targets/minimums should respect the whole Mon-Sun week(s) this plan touches,
-    // not treat a partial stretch (e.g. planning just 3 days) as its own isolated week —
-    // so pre-count whatever's already planned on the surrounding days of those calendar weeks
-    const touchedWeekStarts = new Set(days.map(d=>mondayOnOrBefore(d)));
-    const surroundingDates = [];
-    touchedWeekStarts.forEach(ws=>{
-      weekDates(ws).forEach(d=>{ if(!days.includes(d)) surroundingDates.push(d); });
-    });
-    surroundingDates.forEach(d=>{
-      const existing = state.days[d];
-      if(!existing) return;
-      ['lunch','dinner'].forEach(m=>{
-        const slot = existing[m];
-        if(slot && slot.status==='planned' && slot.recipeId){
-          const r = getRecipe(slot.recipeId);
-          if(r){
-            (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+1);
-            (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+1);
-          }
-        }
-      });
-    });
-
-    // meal-base weekly target is a *cap* for variety, not a quota to chase — it caps how many
-    // times a base can appear this week, but nothing ever actively pulls extra recipes to reach it
-    function wouldExceedBaseCap(r){
-      const copies = decideCopies(r);
-      return (r.baseIds||[]).some(id=>{
-        const b = getMealBase(id);
-        if(!b || !b.weeklyTarget) return false;
-        return (baseCounts[id]||0) + copies > b.weeklyTarget;
-      });
-    }
-    function tryAdd(r){
-      if(selectedIds.has(r.id) || unitsUsed>=remainingSlots.length) return false;
-      if(wouldExceedBaseCap(r)) return false;
-      const copies = decideCopies(r);
-      selected.push(r); selectedIds.add(r.id); unitsUsed += copies;
-      (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+copies);
-      (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+copies);
-      return true;
-    }
-
-    // pass 0: if a busiest day was picked, make sure enough easy (busy-tagged) meals
-    // are selected to cover that day's slots before anything else is chosen. Uses the
-    // full candidate pool — a base-focused "fancying" filter shouldn't block this.
-    if(wizard.busyDate){
-      const busySlotCount = remainingSlots.filter(s=>s.date===wizard.busyDate).length;
-      let guard=0;
-      while((typeCounts.__busy||0) < busySlotCount && guard<10){
-        guard++;
-        const c = candidatesAll.find(r=>!selectedIds.has(r.id) && hasBusyTag(r));
-        if(!c) break;
-        if(!tryAdd(c)) break;
-        typeCounts.__busy = (typeCounts.__busy||0) + 1;
-      }
-    }
-    // pass 1: meet meal-type weekly minimums (a genuine floor, unlike meal-base targets).
-    // Also uses the full pool — "fancying" only narrows the general-fill pass below.
-    state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
-      let guard=0;
-      while((typeCounts[t.id]||0) < t.weeklyMin && guard<50){
-        guard++;
-        const c = candidatesAll.find(r=>!selectedIds.has(r.id) && (r.typeIds||[]).includes(t.id));
-        if(!c || !tryAdd(c)) break;
-      }
-    });
-    // pass 2: fill whatever's left with the next-in-rotation candidates — this is where
-    // variation actually comes from; a base's target just caps how far any one base can go here
-    for(const r of candidates){
-      if(unitsUsed>=remainingSlots.length) break;
-      tryAdd(r);
-    }
-    // pass 3: if "fancying this week" left too few options to fill the week, fall back
-    // to the full recipe pool (still respecting frequency/season) rather than leaving gaps
-    if(unitsUsed < remainingSlots.length && fancy.length){
-      const fallback = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !selectedIds.has(r.id) && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
-      for(const r of fallback){
-        if(unitsUsed>=remainingSlots.length) break;
-        tryAdd(r);
-      }
-    }
-
-    // note any rule that couldn't be fully met, so we can tell the person what's missing.
-    // only meal-type minimums are reported here — meal-base targets are just a variety cap,
-    // so there's no "shortfall" concept for them.
-    state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
-      const have = typeCounts[t.id]||0;
-      if(have < t.weeklyMin){
-        shortfalls.push({kind:'type', id:t.id, name:t.name, message:`"${t.name}" — wanted ${t.weeklyMin}/wk, only fit ${have} in this time. If you have more than that tagged, the rest were likely excluded by their repeat frequency (used too recently) or there just wasn't a day left to place them.`});
-      }
-    });
-
-    // a recipe tagged "prefers lunch/dinner" gets first refusal on that slot type (soft, not a hard rule)
     function prefersSlot(r, mealType){
       return (r.typeIds||[]).some(id=>{
         const t = getMealType(id);
@@ -1291,68 +1172,190 @@ function proceedGeneratePlan(overwriteAll){
       return 0;
     }
 
-    // place multi-copy recipes first: never twice on the same day, and every copy
-    // must land within 2 days of its first appearance so it doesn't sprawl across the week
-    let openSlots = remainingSlots.slice();
-    const multiplyRecipes = selected.filter(r=>decideCopies(r)>1);
-    const singleRecipes = selected.filter(r=>decideCopies(r)<=1);
+    // "weekly" rules (base caps, type minimums) reset fresh per Mon-Sun calendar week —
+    // a plan spanning two weeks shouldn't have week 2 starved because week 1 already used
+    // up the shared caps, so group the remaining slots by which calendar week they fall in
+    // and run selection + assignment separately for each.
+    const segmentsMap = new Map();
+    remainingSlots.forEach(slot=>{
+      const ws = mondayOnOrBefore(slot.date);
+      if(!segmentsMap.has(ws)) segmentsMap.set(ws, []);
+      segmentsMap.get(ws).push(slot);
+    });
+    const reportedTypeShortfalls = new Set();
 
-    multiplyRecipes.forEach(r=>{
-      if(!openSlots.length) return;
-      const copies = decideCopies(r);
-      // prefer to start away from the busiest day and away from a same-day base conflict
-      let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
-      if(startIdx===-1) startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
-      if(startIdx===-1) startIdx = 0;
-      const [startSlot] = openSlots.splice(startIdx,1);
-      const startDate = startSlot.date;
-      const maxDate = addDays(startDate, 2);
-      const placements = [startSlot];
-      const usedDates = new Set([startDate]);
-      for(let k=1;k<copies;k++){
-        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
-        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate);
-        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
-        if(idx===-1) break; // couldn't fit another copy within the window — place what we can
-        const [s] = openSlots.splice(idx,1);
-        placements.push(s);
-        usedDates.add(s.date);
+    segmentsMap.forEach((segmentSlots, weekStart)=>{
+      const refDate = segmentSlots[0].date;
+      const season = getSeason(refDate);
+      function seasonOk(r){
+        return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
       }
-      placements.forEach(slot=>{
+      function freqOk(r){
+        const freq = r.frequencyWeeks || 1;
+        return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, refDate) < freq);
+      }
+
+      let candidatesAll = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
+      let candidates = fancy.length ? candidatesAll.filter(r=>(r.baseIds||[]).some(id=>fancy.includes(id))) : candidatesAll;
+
+      const copiesFor = new Map();
+      function decideCopies(r){
+        if(copiesFor.has(r.id)) return copiesFor.get(r.id);
+        const c = r.multiply ? (Math.random()<0.5?2:3) : 1;
+        copiesFor.set(r.id, c);
+        return c;
+      }
+
+      const selected = [], selectedIds = new Set();
+      let unitsUsed = 0;
+      const baseCounts = {}, typeCounts = {};
+
+      // pre-count whatever's already planned on the surrounding days of THIS calendar week
+      // (days outside what we're planning this run) so this week's caps/minimums respect them
+      weekDates(weekStart).forEach(d=>{
+        if(days.includes(d)) return;
+        const existing = state.days[d];
+        if(!existing) return;
+        ['lunch','dinner'].forEach(m=>{
+          const slot = existing[m];
+          if(slot && slot.status==='planned' && slot.recipeId){
+            const r = getRecipe(slot.recipeId);
+            if(r){
+              (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+1);
+              (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+1);
+            }
+          }
+        });
+      });
+
+      // meal-base weekly target is a *cap* for variety, not a quota to chase — it caps how many
+      // times a base can appear this week, but nothing ever actively pulls extra recipes to reach it
+      function wouldExceedBaseCap(r){
+        const copies = decideCopies(r);
+        return (r.baseIds||[]).some(id=>{
+          const b = getMealBase(id);
+          if(!b || !b.weeklyTarget) return false;
+          return (baseCounts[id]||0) + copies > b.weeklyTarget;
+        });
+      }
+      function tryAdd(r){
+        if(selectedIds.has(r.id) || unitsUsed>=segmentSlots.length) return false;
+        if(wouldExceedBaseCap(r)) return false;
+        const copies = decideCopies(r);
+        selected.push(r); selectedIds.add(r.id); unitsUsed += copies;
+        (r.baseIds||[]).forEach(id=>baseCounts[id]=(baseCounts[id]||0)+copies);
+        (r.typeIds||[]).forEach(id=>typeCounts[id]=(typeCounts[id]||0)+copies);
+        return true;
+      }
+
+      // pass 0: if the busiest day picked falls in this week, make sure enough easy
+      // (busy-tagged) meals are selected to cover it before anything else is chosen
+      if(wizard.busyDate && segmentSlots.some(s=>s.date===wizard.busyDate)){
+        const busySlotCount = segmentSlots.filter(s=>s.date===wizard.busyDate).length;
+        let guard=0;
+        while((typeCounts.__busy||0) < busySlotCount && guard<10){
+          guard++;
+          const c = candidatesAll.find(r=>!selectedIds.has(r.id) && hasBusyTag(r));
+          if(!c) break;
+          if(!tryAdd(c)) break;
+          typeCounts.__busy = (typeCounts.__busy||0) + 1;
+        }
+      }
+      // pass 1: meet meal-type weekly minimums for this week (a genuine floor)
+      state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
+        let guard=0;
+        while((typeCounts[t.id]||0) < t.weeklyMin && guard<50){
+          guard++;
+          const c = candidatesAll.find(r=>!selectedIds.has(r.id) && (r.typeIds||[]).includes(t.id));
+          if(!c || !tryAdd(c)) break;
+        }
+      });
+      // pass 2: fill whatever's left in this week with the next-in-rotation candidates
+      for(const r of candidates){
+        if(unitsUsed>=segmentSlots.length) break;
+        tryAdd(r);
+      }
+      // pass 3: if "fancying this week" left too few options, fall back to the full pool
+      if(unitsUsed < segmentSlots.length && fancy.length){
+        const fallback = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !selectedIds.has(r.id) && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
+        for(const r of fallback){
+          if(unitsUsed>=segmentSlots.length) break;
+          tryAdd(r);
+        }
+      }
+
+      // note any type minimum that couldn't be fully met this week
+      state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
+        const have = typeCounts[t.id]||0;
+        if(have < t.weeklyMin && !reportedTypeShortfalls.has(t.id)){
+          reportedTypeShortfalls.add(t.id);
+          shortfalls.push({kind:'type', id:t.id, name:t.name, message:`"${t.name}" — wanted ${t.weeklyMin}/wk, only fit ${have} in this time. If you have more than that tagged, the rest were likely excluded by their repeat frequency (used too recently) or there just wasn't a day left to place them.`});
+        }
+      });
+
+      // place multi-copy recipes first: never twice on the same day, and every copy
+      // must land within 2 days of its first appearance so it doesn't sprawl across the week
+      let openSlots = segmentSlots.slice();
+      const multiplyRecipes = selected.filter(r=>decideCopies(r)>1);
+      const singleRecipes = selected.filter(r=>decideCopies(r)<=1);
+
+      multiplyRecipes.forEach(r=>{
+        if(!openSlots.length) return;
+        const copies = decideCopies(r);
+        // prefer to start away from the busiest day and away from a same-day base conflict
+        let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
+        if(startIdx===-1) startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
+        if(startIdx===-1) startIdx = 0;
+        const [startSlot] = openSlots.splice(startIdx,1);
+        const startDate = startSlot.date;
+        const maxDate = addDays(startDate, 2);
+        const placements = [startSlot];
+        const usedDates = new Set([startDate]);
+        for(let k=1;k<copies;k++){
+          let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
+          if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && s.date!==wizard.busyDate);
+          if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
+          if(idx===-1) break;
+          const [s] = openSlots.splice(idx,1);
+          placements.push(s);
+          usedDates.add(s.date);
+        }
+        placements.forEach(slot=>{
+          const day = state.days[slot.date];
+          day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+        });
+        r.lastUsedWeekStart = placements[0].date;
+      });
+
+      // place the remaining single-copy recipes into whatever slots are left —
+      // the busiest day gets first refusal on any easy (busy-tagged) recipes,
+      // other days actively avoid using them up while alternatives exist, and
+      // nothing sharing a meal base with that day's other meal is picked if avoidable
+      const queue = singleRecipes.slice();
+      const busyModeOn = !!wizard.busyDate;
+      openSlots.forEach(slot=>{
+        if(!queue.length) return;
+        const isBusySlot = busyModeOn && slot.date===wizard.busyDate;
+        const noConflict = r=>!hasBaseConflictOnDay(r, slot.date);
+        const predicates = [];
+        if(isBusySlot){
+          predicates.push(r=>hasBusyTag(r) && noConflict(r));
+          predicates.push(r=>hasBusyTag(r));
+        }
+        predicates.push(r=>prefersSlot(r, slot.meal) && noConflict(r));
+        if(busyModeOn && !isBusySlot){
+          predicates.push(r=>!hasBusyTag(r) && noConflict(r));
+          predicates.push(r=>!hasBusyTag(r));
+        } else {
+          predicates.push(noConflict);
+        }
+        predicates.push(r=>prefersSlot(r, slot.meal));
+        const idx = pickFromQueue(queue, predicates);
+        const [r] = queue.splice(idx,1);
         const day = state.days[slot.date];
         day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+        r.lastUsedWeekStart = slot.date;
       });
-      r.lastUsedWeekStart = placements[0].date;
-    });
-
-    // place the remaining single-copy recipes into whatever slots are left —
-    // the busiest day gets first refusal on any easy (busy-tagged) recipes,
-    // other days actively avoid using them up while alternatives exist, and
-    // nothing sharing a meal base with that day's other meal is picked if avoidable
-    const queue = singleRecipes.slice();
-    const busyModeOn = !!wizard.busyDate;
-    openSlots.forEach(slot=>{
-      if(!queue.length) return;
-      const isBusySlot = busyModeOn && slot.date===wizard.busyDate;
-      const noConflict = r=>!hasBaseConflictOnDay(r, slot.date);
-      const predicates = [];
-      if(isBusySlot){
-        predicates.push(r=>hasBusyTag(r) && noConflict(r));
-        predicates.push(r=>hasBusyTag(r));
-      }
-      predicates.push(r=>prefersSlot(r, slot.meal) && noConflict(r));
-      if(busyModeOn && !isBusySlot){
-        predicates.push(r=>!hasBusyTag(r) && noConflict(r));
-        predicates.push(r=>!hasBusyTag(r));
-      } else {
-        predicates.push(noConflict);
-      }
-      predicates.push(r=>prefersSlot(r, slot.meal));
-      const idx = pickFromQueue(queue, predicates);
-      const [r] = queue.splice(idx,1);
-      const day = state.days[slot.date];
-      day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
-      r.lastUsedWeekStart = slot.date;
     });
   }
 
