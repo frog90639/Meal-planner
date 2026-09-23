@@ -1149,8 +1149,8 @@ function proceedGeneratePlan(overwriteAll){
     function isManualOnly(r){
       return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
     }
-    let candidates = state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !isManualOnly(r) && freqOk(r) && seasonOk(r));
-    candidates = lruSort(candidates.filter(r=>!fancy.length || (r.baseIds||[]).some(id=>fancy.includes(id))));
+    let candidatesAll = lruSort(state.recipes.filter(r=>!usedIds.has(r.id) && !r.ephemeral && !isManualOnly(r) && freqOk(r) && seasonOk(r)));
+    let candidates = fancy.length ? candidatesAll.filter(r=>(r.baseIds||[]).some(id=>fancy.includes(id))) : candidatesAll;
 
     const copiesFor = new Map();
     function decideCopies(r){
@@ -1212,24 +1212,26 @@ function proceedGeneratePlan(overwriteAll){
     }
 
     // pass 0: if a busiest day was picked, make sure enough easy (busy-tagged) meals
-    // are selected to cover that day's slots before anything else is chosen
+    // are selected to cover that day's slots before anything else is chosen. Uses the
+    // full candidate pool — a base-focused "fancying" filter shouldn't block this.
     if(wizard.busyDate){
       const busySlotCount = remainingSlots.filter(s=>s.date===wizard.busyDate).length;
       let guard=0;
       while((typeCounts.__busy||0) < busySlotCount && guard<10){
         guard++;
-        const c = candidates.find(r=>!selectedIds.has(r.id) && hasBusyTag(r));
+        const c = candidatesAll.find(r=>!selectedIds.has(r.id) && hasBusyTag(r));
         if(!c) break;
         if(!tryAdd(c)) break;
         typeCounts.__busy = (typeCounts.__busy||0) + 1;
       }
     }
-    // pass 1: meet meal-type weekly minimums (a genuine floor, unlike meal-base targets)
+    // pass 1: meet meal-type weekly minimums (a genuine floor, unlike meal-base targets).
+    // Also uses the full pool — "fancying" only narrows the general-fill pass below.
     state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
       let guard=0;
       while((typeCounts[t.id]||0) < t.weeklyMin && guard<50){
         guard++;
-        const c = candidates.find(r=>!selectedIds.has(r.id) && (r.typeIds||[]).includes(t.id));
+        const c = candidatesAll.find(r=>!selectedIds.has(r.id) && (r.typeIds||[]).includes(t.id));
         if(!c || !tryAdd(c)) break;
       }
     });
@@ -1255,7 +1257,7 @@ function proceedGeneratePlan(overwriteAll){
     state.mealTypes.filter(t=>t.weeklyMin>0).forEach(t=>{
       const have = typeCounts[t.id]||0;
       if(have < t.weeklyMin){
-        shortfalls.push({kind:'type', id:t.id, name:t.name, message:`"${t.name}" — wanted ${t.weeklyMin}/wk, only had ${have} available.`});
+        shortfalls.push({kind:'type', id:t.id, name:t.name, message:`"${t.name}" — wanted ${t.weeklyMin}/wk, only fit ${have} in this time. If you have more than that tagged, the rest were likely excluded by their repeat frequency (used too recently) or there just wasn't a day left to place them.`});
       }
     });
 
