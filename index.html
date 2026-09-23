@@ -1050,7 +1050,23 @@ function generatePlan(){
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
   const hasContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
-  if(hasContent && !confirm('Some of these days already have a plan. Replace it?')) return;
+  if(hasContent){
+    showOverlay(`
+      <h2>Replace existing plan?</h2>
+      <p class="desc">Some of these days already have a plan. Replacing will overwrite them.</p>
+      <div class="btnrow">
+        <button class="btn ghost" onclick="closeOverlay()">No</button>
+        <button class="btn primary" onclick="proceedGeneratePlan()">Yes</button>
+      </div>
+    `);
+    return;
+  }
+  proceedGeneratePlan();
+}
+function proceedGeneratePlan(){
+  const startISO = wizard.startDate;
+  const endISO = wizard.endDate;
+  const days = datesBetween(startISO, endISO);
 
   days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
 
