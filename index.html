@@ -1052,31 +1052,43 @@ function generatePlan(){
   const hasContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
   if(hasContent){
     showOverlay(`
-      <h2>Replace existing plan?</h2>
-      <p class="desc">Some of these days already have a plan. Replacing will overwrite them.</p>
+      <div style="display:flex;justify-content:flex-end;margin:-6px -4px 0 0;">
+        <button class="del-x" onclick="closeOverlay()" aria-label="Cancel" style="font-size:20px;">✕</button>
+      </div>
+      <h2 style="margin-top:-8px;">Replace existing plan?</h2>
+      <p class="desc">Some of these days already have a plan. Replace everything, or just fill in whatever's still blank?</p>
       <div class="btnrow">
-        <button class="btn ghost" onclick="closeOverlay()">No</button>
-        <button class="btn primary" onclick="proceedGeneratePlan()">Yes</button>
+        <button class="btn ghost" onclick="proceedGeneratePlan(false)">No, just fill blanks</button>
+        <button class="btn primary" onclick="proceedGeneratePlan(true)">Yes, replace all</button>
       </div>
     `);
     return;
   }
-  proceedGeneratePlan();
+  proceedGeneratePlan(true);
 }
-function proceedGeneratePlan(){
+function proceedGeneratePlan(overwriteAll){
   const startISO = wizard.startDate;
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
 
-  days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
+  if(overwriteAll){
+    days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
+  } else {
+    days.forEach(date=>{ if(!state.days[date]) state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
+  }
 
   const slotOrder = [];
   days.forEach(date=>{
     ['lunch','dinner'].forEach(meal=>{
       const key = date+'_'+meal;
       const day = state.days[date];
-      if(wizard.skips[key]) day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null};
-      else slotOrder.push({date,meal});
+      if(wizard.skips[key]){
+        day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null};
+      } else if(!overwriteAll && day[meal].status!=='empty'){
+        // already has content and we're only filling blanks — leave it alone
+      } else {
+        slotOrder.push({date,meal});
+      }
     });
   });
 
