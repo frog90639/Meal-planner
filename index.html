@@ -159,6 +159,13 @@
   /* settings */
   .settings-wrap{padding-top:4px;}
   .cat-card{background:var(--paper);border-radius:12px;padding:14px 14px 12px;margin-bottom:14px;box-shadow:var(--shadow);color:var(--ink);}
+  details.cat-card summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;}
+  details.cat-card summary::-webkit-details-marker{display:none;}
+  details.cat-card summary .section-title{margin:0;flex:1;}
+  details.cat-card summary .sec-count{font-size:11.5px;color:var(--ink-soft);font-family:var(--font-body);font-weight:400;}
+  details.cat-card summary::after{content:'▸';font-size:13px;color:var(--ink-soft);transition:transform .15s;flex:none;}
+  details.cat-card[open] summary::after{transform:rotate(90deg);}
+  details.cat-card .cat-body{margin-top:10px;}
   .section-title{font-family:var(--font-display);font-size:16px;margin:0 0 4px;color:var(--ink);}
   .section-desc{font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.4;}
   .rule-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:10px 0;border-top:1px dashed var(--paper-line);}
@@ -204,7 +211,7 @@ const V1_KEY = 'mealPlan.v1';
 function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
 
 function seedDefaultState(){
-  const mealBases = ['Pasta','Rice','Potato','Noodles','Bread','Salad'].map(name=>({id:uid(), name, weeklyTarget:1, excludedSeasons:[]}));
+  const mealBases = ['Pasta','Rice','Potato','Noodles','Bread','Salad'].map(name=>({id:uid(), name, weeklyTarget:1, ruleType:'upto', excludedSeasons:[]}));
   const mealTypes = [
     {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true, manualOnly:false},
     {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false},
@@ -214,7 +221,7 @@ function seedDefaultState(){
   return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null };
 }
 function migrateFromV1(old){
-  const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, excludedSeasons:[]}));
+  const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, ruleType:'upto', excludedSeasons:[]}));
   const mealTypes = [
     {id:uid(), name:'Mindless', weeklyMin:0, slotPref:null, busyDay:true, manualOnly:false},
     {id:uid(), name:'Easy', weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false},
@@ -365,7 +372,7 @@ function baseNames(r){ return (r.baseIds||[]).map(id=>{const b=getMealBase(id); 
 function typeNames(r){ return (r.typeIds||[]).map(id=>{const t=getMealType(id); return t?t.name:null;}).filter(Boolean); }
 function getOrCreateMealBase(name){
   let b = state.mealBases.find(b=>b.name.toLowerCase()===name.toLowerCase());
-  if(!b){ b = {id:uid(), name, weeklyTarget:0}; state.mealBases.push(b); }
+  if(!b){ b = {id:uid(), name, weeklyTarget:0, ruleType:'upto', excludedSeasons:[]}; state.mealBases.push(b); }
   return b;
 }
 function getOrCreateMealType(name){
@@ -533,13 +540,20 @@ function attachHomeHandlers(){
       if(!rdragging) return; rdragging=false;
       const dx = e.changedTouches[0].clientX - rsx;
       const dy = e.changedTouches[0].clientY - rsy;
-      if(dx > 60 && dx > Math.abs(dy)*1.5){
+      if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)*1.5){
         const date = row.getAttribute('data-date');
         const meal = row.getAttribute('data-meal');
         const slot = peekDay(date)[meal];
-        if(slot.status==='planned' && slot.recipeId){
-          e.stopPropagation();
-          swapMeal(date, meal);
+        if(dx > 0){
+          if(slot.status==='planned' && slot.recipeId){
+            e.stopPropagation();
+            swapMeal(date, meal);
+          }
+        } else {
+          if(slot.status==='planned'){
+            e.stopPropagation();
+            openMovePrompt(date, meal);
+          }
         }
       }
     }, {passive:true});
@@ -808,6 +822,83 @@ function swapMeal(date, meal){
   const picked = candidates[0];
   assignSlot(date, meal, picked.id);
   toast(`Swapped in ${picked.name}`);
+}
+
+/* ---- move: swipe a planned meal left to relocate it to a different day/meal ---- */
+let moveSource = null;
+function openMovePrompt(date, meal){
+  const slot = peekDay(date)[meal];
+  if(slot.status!=='planned') return;
+  moveSource = {date, meal};
+  window.__moveTargetMeal = meal;
+  showOverlay(`
+    <h2>Move "${escapeHtml(slot.recipeName||'this meal')}"</h2>
+    <p class="desc">Where do you want to move it to?</p>
+    <div class="field">
+      <label>Date</label>
+      <input type="date" id="moveDate" value="${date}">
+    </div>
+    <div class="field">
+      <label>Meal</label>
+      <div class="chip-group">
+        <button type="button" class="chip ${meal==='lunch'?'active':''}" data-meal="lunch" onclick="setMoveMeal('lunch')">Lunch</button>
+        <button type="button" class="chip ${meal==='dinner'?'active':''}" data-meal="dinner" onclick="setMoveMeal('dinner')">Dinner</button>
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" onclick="confirmMoveTarget()">Next</button>
+    </div>
+  `);
+}
+function setMoveMeal(m){
+  window.__moveTargetMeal = m;
+  document.querySelectorAll('.chip[data-meal]').forEach(el=>{
+    el.classList.toggle('active', el.getAttribute('data-meal')===m);
+  });
+}
+function confirmMoveTarget(){
+  const targetDate = document.getElementById('moveDate').value;
+  const targetMeal = window.__moveTargetMeal;
+  if(!targetDate || !targetMeal || !moveSource) return;
+  if(targetDate===moveSource.date && targetMeal===moveSource.meal){
+    closeOverlay();
+    moveSource = null;
+    return;
+  }
+  const destSlot = peekDay(targetDate)[targetMeal];
+  if(destSlot.status==='planned'){
+    showOverlay(`
+      <h2>Swap or replace?</h2>
+      <p class="desc">${dayName(targetDate)} ${targetMeal} already has "${escapeHtml(destSlot.recipeName||'a meal')}".</p>
+      <div class="btnrow">
+        <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+        <button class="btn primary" onclick="doMove('${targetDate}','${targetMeal}',true)">Swap the two</button>
+      </div>
+      <div class="btnrow"><button class="btn danger" onclick="doMove('${targetDate}','${targetMeal}',false)" style="flex:1;">Replace it (discard the other)</button></div>
+    `);
+  } else {
+    doMove(targetDate, targetMeal, false);
+  }
+}
+function doMove(targetDate, targetMeal, swap){
+  const srcDay = ensureDay(moveSource.date);
+  const dstDay = ensureDay(targetDate);
+  const srcSlot = srcDay[moveSource.meal];
+  const dstSlot = dstDay[targetMeal];
+  if(swap){
+    dstDay[targetMeal] = srcSlot;
+    srcDay[moveSource.meal] = dstSlot;
+  } else {
+    dstDay[targetMeal] = srcSlot;
+    srcDay[moveSource.meal] = emptySlot();
+  }
+  moveSource = null;
+  saveState();
+  refreshLiveShare();
+  closeOverlay();
+  render();
+  toast(swap ? 'Swapped' : 'Moved');
 }
 
 /* ============================================================
@@ -1161,6 +1252,25 @@ function proceedGeneratePlan(overwriteAll){
     // is only ever left blank if literally no recipe exists in the library at all
     const usedThisRun = new Set();
     const baseUsedCount = {};
+
+    // for "include regularly" bases, find how long it's actually been since each one
+    // last appeared anywhere in the plan, so a long-absent base can get a boost
+    const regularBaseLastGap = {}; // baseId -> weeks since last used (Infinity if never)
+    state.mealBases.filter(b=>b.ruleType==='regular').forEach(b=>{
+      let latest = null;
+      Object.keys(state.days).forEach(d=>{
+        const day = state.days[d];
+        ['lunch','dinner'].forEach(m=>{
+          const slot = day[m];
+          if(slot.status==='planned' && slot.recipeId){
+            const r = getRecipe(slot.recipeId);
+            if(r && (r.baseIds||[]).includes(b.id) && (!latest || d>latest)) latest = d;
+          }
+        });
+      });
+      regularBaseLastGap[b.id] = latest ? Math.max(0, weeksBetween(latest, startISO)) : Infinity;
+    });
+
     function weightFor(r, refDate, isBusySlot){
       let w = 1;
       (r.typeIds||[]).forEach(id=>{
@@ -1171,9 +1281,22 @@ function proceedGeneratePlan(overwriteAll){
       });
       (r.baseIds||[]).forEach(id=>{
         const b = getMealBase(id);
+        if(!b) return;
         const usedCount = baseUsedCount[id]||0;
-        if(b && b.weeklyTarget>0 && usedCount>=b.weeklyTarget) w *= 0.15; // soft cap, never forbidden
-        else w *= Math.pow(0.6, usedCount);
+        if(b.ruleType==='min' && b.weeklyTarget>0){
+          if(usedCount < b.weeklyTarget) w *= (1 + (b.weeklyTarget-usedCount)*1.5); // nudge toward the floor
+          else w *= Math.pow(0.7, usedCount-b.weeklyTarget); // gentle taper once met
+        } else if(b.ruleType==='regular'){
+          const gapWeeks = regularBaseLastGap[id];
+          const reminderAt = b.weeklyTarget>0 ? b.weeklyTarget : 2;
+          if(gapWeeks===Infinity) w *= 4; // never used yet — give it a real chance
+          else if(gapWeeks>=reminderAt) w *= (1 + (gapWeeks-reminderAt+1)*1.2);
+          if(usedThisRun.has(r.id) || baseUsedCount[id]) w *= Math.pow(0.6, usedCount); // still avoid overdoing it once picked
+        } else {
+          // 'upto' (default): a soft cap, never forbidden if nothing else is available
+          if(b.weeklyTarget>0 && usedCount>=b.weeklyTarget) w *= 0.15;
+          else w *= Math.pow(0.6, usedCount);
+        }
       });
       if(usedThisRun.has(r.id)) w *= 0.1;
       if(r.lastUsedWeekStart){
@@ -1499,15 +1622,26 @@ function renderSettings(){
 }
 
 /* ---- meal bases ---- */
+function baseRuleLabel(b){
+  const n = b.weeklyTarget||0;
+  if(b.ruleType==='min') return `at least ${n}/wk`;
+  if(b.ruleType==='regular') return `remind after ${n}wk gap`;
+  return `up to ${n}/wk`;
+}
 function renderMealBasesSection(){
   const rows = state.mealBases.map(b=>{
     const seasonChips = SEASONS.map(s=>`<button type="button" class="chip season-chip ${((b.excludedSeasons||[]).includes(s))?'active':''}" onclick="toggleBaseSeason('${b.id}','${s}')">${s}</button>`).join('');
     return `
     <div class="rule-row">
       <input type="text" value="${escapeHtml(b.name)}" onchange="renameMealBase('${b.id}',this.value)">
+      <select onchange="setBaseRuleType('${b.id}',this.value)">
+        <option value="upto" ${(!b.ruleType||b.ruleType==='upto')?'selected':''}>up to</option>
+        <option value="min" ${b.ruleType==='min'?'selected':''}>at least</option>
+        <option value="regular" ${b.ruleType==='regular'?'selected':''}>include regularly</option>
+      </select>
       <div class="target-stepper">
         <button onclick="bumpBaseTarget('${b.id}',-1)">–</button>
-        <span class="tval">up to ${b.weeklyTarget}/wk</span>
+        <span class="tval">${baseRuleLabel(b)}</span>
         <button onclick="bumpBaseTarget('${b.id}',1)">+</button>
       </div>
       <button class="del-x" onclick="deleteMealBase('${b.id}')">✕</button>
@@ -1518,25 +1652,30 @@ function renderMealBasesSection(){
     </div>`;
   }).join('');
   return `
-    <div class="cat-card">
-      <h3 class="section-title">Meal bases</h3>
-      <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. The weekly number is a cap for variety, not a quota — it's the most times a base could show up, so you don't end up with pasta four nights running. It's never chased if there aren't enough recipes for it. Mark a base "out of season" for any season and the auto-planner won't pull it then.</p>
-      ${rows || '<p class="hint">No meal bases yet.</p>'}
-      <div class="add-cat-form">
-        <input type="text" id="newBaseName" placeholder="e.g. Couscous">
-        <button onclick="addMealBase()">Add</button>
+    <details class="cat-card">
+      <summary><h3 class="section-title">Meal bases</h3><span class="sec-count">${state.mealBases.length}</span></summary>
+      <div class="cat-body">
+        <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. Choose how the number behaves: "up to" is a soft cap for variety (won't chase it if you're short on recipes); "at least" nudges toward hitting that many this week; "include regularly" doesn't count per week at all — it just gives a base a boost once it's gone a while without appearing. None of these are hard rules — a slot is never left empty because of them. Mark a base "out of season" for any season and the auto-planner won't pull it then.</p>
+        ${rows || '<p class="hint">No meal bases yet.</p>'}
+        <div class="add-cat-form">
+          <input type="text" id="newBaseName" placeholder="e.g. Couscous">
+          <button onclick="addMealBase()">Add</button>
+        </div>
       </div>
-    </div>`;
+    </details>`;
 }
 function addMealBase(){
   const input = document.getElementById('newBaseName');
   const name = input.value.trim();
   if(!name) return;
-  state.mealBases.push({id:uid(), name, weeklyTarget:1, excludedSeasons:[]});
+  state.mealBases.push({id:uid(), name, weeklyTarget:1, ruleType:'upto', excludedSeasons:[]});
   saveState(); render();
 }
 function renameMealBase(id, name){
   const b = getMealBase(id); if(b){ b.name = name.trim()||b.name; saveState(); }
+}
+function setBaseRuleType(id, val){
+  const b = getMealBase(id); if(b){ b.ruleType = val; saveState(); render(); }
 }
 function bumpBaseTarget(id, delta){
   const b = getMealBase(id); b.weeklyTarget = Math.max(0,(b.weeklyTarget||0)+delta);
@@ -1582,15 +1721,17 @@ function renderMealTypesSection(){
       </label>
     </div>`).join('');
   return `
-    <div class="cat-card">
-      <h3 class="section-title">Meal types</h3>
-      <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
-      ${rows || '<p class="hint">No meal types yet.</p>'}
-      <div class="add-cat-form">
-        <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
-        <button onclick="addMealType()">Add</button>
+    <details class="cat-card">
+      <summary><h3 class="section-title">Meal types</h3><span class="sec-count">${state.mealTypes.length}</span></summary>
+      <div class="cat-body">
+        <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
+        ${rows || '<p class="hint">No meal types yet.</p>'}
+        <div class="add-cat-form">
+          <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
+          <button onclick="addMealType()">Add</button>
+        </div>
       </div>
-    </div>`;
+    </details>`;
 }
 function addMealType(){
   const input = document.getElementById('newTypeName');
@@ -1637,17 +1778,17 @@ function renderRecipesSection(){
     </div>`;
   }).join('');
   return `
-    <div class="cat-card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;gap:8px;">
-        <h3 class="section-title" style="margin:0;">Recipes</h3>
-        <div style="display:flex;gap:6px;flex:none;">
+    <details class="cat-card">
+      <summary><h3 class="section-title">Recipes</h3><span class="sec-count">${state.recipes.filter(r=>!r.ephemeral).length}</span></summary>
+      <div class="cat-body">
+        <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;gap:6px;">
           <button class="btn small" style="background:var(--mustard);color:var(--mustard-ink);" onclick="openBulkImport()">Bulk import</button>
           <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
         </div>
+        <p class="section-desc">Tap a recipe to edit its bases, types, and rotation.</p>
+        ${rows || '<p class="hint">No recipes yet — add your first one.</p>'}
       </div>
-      <p class="section-desc">Tap a recipe to edit its bases, types, and rotation.</p>
-      ${rows || '<p class="hint">No recipes yet — add your first one.</p>'}
-    </div>`;
+    </details>`;
 }
 
 /* ---- bulk import: paste names, categorize each one, then save them all ---- */
