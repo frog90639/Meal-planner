@@ -904,9 +904,9 @@ function doMove(targetDate, targetMeal, swap){
 /* ============================================================
    WIZARD: Plan meals
    ============================================================ */
-let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
+let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
+  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
   renderWizardStep1();
 }
 function dots(n,total){
@@ -1001,9 +1001,20 @@ function wizardStep4(){
   const chips = days.map(d=>`<button type="button" class="chip" data-date="${d}" onclick="setBusyDate('${d}')">${dayName(d)} <span style="opacity:.7;">${dayShort(d)}</span></button>`).join('');
   showOverlay(`
     ${dots(4,6)}
-    <h2>Which day's likely to be busiest?</h2>
-    <p class="desc">We'll lean on your easy (mindless) meals that day. Optional — leave unselected to skip.</p>
-    <div class="chip-group" id="busyDayChips">${chips}</div>
+    <h2>How busy is this stretch?</h2>
+    <p class="desc">This overrides your usual rules just for this plan — a busier pace leans harder on easy meals throughout, not just on one day.</p>
+    <div class="field">
+      <label>Overall pace</label>
+      <div class="chip-group" id="busyLevelChips">
+        <button type="button" class="chip" data-level="1" onclick="setBusyLevel(1)">Normal</button>
+        <button type="button" class="chip" data-level="1.6" onclick="setBusyLevel(1.6)">Busier than usual</button>
+        <button type="button" class="chip" data-level="2.5" onclick="setBusyLevel(2.5)">Very busy</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Worst single day (optional)</label>
+      <div class="chip-group" id="busyDayChips">${chips}</div>
+    </div>
     <div class="btnrow">
       <button class="btn ghost" onclick="wizardStep3()">Back</button>
       <button class="btn primary" onclick="wizardStep5()">Next</button>
@@ -1012,11 +1023,20 @@ function wizardStep4(){
   document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
     el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
   });
+  document.querySelectorAll('#busyLevelChips [data-level]').forEach(el=>{
+    el.classList.toggle('active', parseFloat(el.getAttribute('data-level'))===(wizard.busyLevel||1));
+  });
 }
 function setBusyDate(d){
   wizard.busyDate = (wizard.busyDate===d) ? null : d;
   document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
     el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
+  });
+}
+function setBusyLevel(level){
+  wizard.busyLevel = level;
+  document.querySelectorAll('#busyLevelChips [data-level]').forEach(el=>{
+    el.classList.toggle('active', parseFloat(el.getAttribute('data-level'))===level);
   });
 }
 
@@ -1252,6 +1272,7 @@ function proceedGeneratePlan(overwriteAll){
     // is only ever left blank if literally no recipe exists in the library at all
     const usedThisRun = new Set();
     const baseUsedCount = {};
+    const typeUsedCount = {};
 
     // for "include regularly" bases, find how long it's actually been since each one
     // last appeared anywhere in the plan, so a long-absent base can get a boost
@@ -1271,21 +1292,41 @@ function proceedGeneratePlan(overwriteAll){
       regularBaseLastGap[b.id] = latest ? Math.max(0, weeksBetween(latest, startISO)) : Infinity;
     });
 
+    // every "X per week" rule is really "X per 14 meals" — scale it to however many
+    // meals this session actually covers, so a 3-day plan and a 10-day plan both apply
+    // the rule proportionally instead of assuming a fixed calendar week
+    const scaleFactor = slotOrder.length / 14;
+    function scaledTarget(n){
+      if(!n || n<=0) return 0;
+      return Math.max(1, Math.round(n * scaleFactor));
+    }
+
     function weightFor(r, refDate, isBusySlot){
       let w = 1;
       (r.typeIds||[]).forEach(id=>{
         const t = getMealType(id);
         if(!t) return;
-        if(t.busyDay) w *= isBusySlot ? 10 : 3; // the "easy" emphasis tag
-        if(t.weeklyMin>0) w *= (1 + t.weeklyMin*0.4); // a configured minimum still nudges harder
+        if(t.busyDay){
+          w *= isBusySlot ? 10 : 3;
+          w *= (wizard.busyLevel||1); // overall "how busy is this stretch" override
+        }
+        const effectiveMin = scaledTarget(t.weeklyMin);
+        if(effectiveMin>0){
+          const usedCount = typeUsedCount[id]||0;
+          if(usedCount < effectiveMin) w *= (1 + (effectiveMin-usedCount)*1.5); // nudge toward the floor
+          else w *= Math.pow(0.7, usedCount-effectiveMin); // taper off once met
+        }
       });
       (r.baseIds||[]).forEach(id=>{
         const b = getMealBase(id);
         if(!b) return;
         const usedCount = baseUsedCount[id]||0;
-        if(b.ruleType==='min' && b.weeklyTarget>0){
-          if(usedCount < b.weeklyTarget) w *= (1 + (b.weeklyTarget-usedCount)*1.5); // nudge toward the floor
-          else w *= Math.pow(0.7, usedCount-b.weeklyTarget); // gentle taper once met
+        if(b.ruleType==='min'){
+          const effectiveTarget = scaledTarget(b.weeklyTarget);
+          if(effectiveTarget>0){
+            if(usedCount < effectiveTarget) w *= (1 + (effectiveTarget-usedCount)*1.5);
+            else w *= Math.pow(0.7, usedCount-effectiveTarget);
+          }
         } else if(b.ruleType==='regular'){
           const gapWeeks = regularBaseLastGap[id];
           const reminderAt = b.weeklyTarget>0 ? b.weeklyTarget : 2;
@@ -1294,7 +1335,8 @@ function proceedGeneratePlan(overwriteAll){
           if(usedThisRun.has(r.id) || baseUsedCount[id]) w *= Math.pow(0.6, usedCount); // still avoid overdoing it once picked
         } else {
           // 'upto' (default): a soft cap, never forbidden if nothing else is available
-          if(b.weeklyTarget>0 && usedCount>=b.weeklyTarget) w *= 0.15;
+          const effectiveCap = scaledTarget(b.weeklyTarget);
+          if(effectiveCap>0 && usedCount>=effectiveCap) w *= 0.15;
           else w *= Math.pow(0.6, usedCount);
         }
       });
@@ -1321,6 +1363,7 @@ function proceedGeneratePlan(overwriteAll){
       r.lastUsedWeekStart = slot.date;
       usedThisRun.add(r.id);
       (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
+      (r.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1);
     }
 
     let openSlots = remainingSlots.slice();
@@ -1390,6 +1433,10 @@ function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
    ============================================================ */
 function openSettings(){ view='settings'; render(); }
 function backHome(){ view='home'; render(); }
+let openSections = new Set();
+function trackSectionToggle(key, isOpen){
+  if(isOpen) openSections.add(key); else openSections.delete(key);
+}
 
 /* ============================================================
    SHARE — live link (Firestore) with a snapshot-link fallback
@@ -1624,9 +1671,9 @@ function renderSettings(){
 /* ---- meal bases ---- */
 function baseRuleLabel(b){
   const n = b.weeklyTarget||0;
-  if(b.ruleType==='min') return `at least ${n}/wk`;
+  if(b.ruleType==='min') return `at least ${n}/14 meals`;
   if(b.ruleType==='regular') return `remind after ${n}wk gap`;
-  return `up to ${n}/wk`;
+  return `up to ${n}/14 meals`;
 }
 function renderMealBasesSection(){
   const rows = state.mealBases.map(b=>{
@@ -1652,10 +1699,10 @@ function renderMealBasesSection(){
     </div>`;
   }).join('');
   return `
-    <details class="cat-card">
+    <details class="cat-card"${openSections.has('bases')?' open':''} ontoggle="trackSectionToggle('bases',this.open)">
       <summary><h3 class="section-title">Meal bases</h3><span class="sec-count">${state.mealBases.length}</span></summary>
       <div class="cat-body">
-        <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. Choose how the number behaves: "up to" is a soft cap for variety (won't chase it if you're short on recipes); "at least" nudges toward hitting that many this week; "include regularly" doesn't count per week at all — it just gives a base a boost once it's gone a while without appearing. None of these are hard rules — a slot is never left empty because of them. Mark a base "out of season" for any season and the auto-planner won't pull it then.</p>
+        <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. Numbers are "per 14 meals" (a standard week) and scale automatically to however many days you're actually planning, so a short 3-day plan won't be held to a full week's numbers. Choose how the number behaves: "up to" is a soft cap for variety (won't chase it if you're short on recipes); "at least" nudges toward hitting that many; "include regularly" doesn't count per plan at all — it just gives a base a boost once it's gone a while without appearing. None of these are hard rules — a slot is never left empty because of them. Mark a base "out of season" for any season and the auto-planner won't pull it then.</p>
         ${rows || '<p class="hint">No meal bases yet.</p>'}
         <div class="add-cat-form">
           <input type="text" id="newBaseName" placeholder="e.g. Couscous">
@@ -1702,7 +1749,7 @@ function renderMealTypesSection(){
       <input type="text" value="${escapeHtml(t.name)}" onchange="renameMealType('${t.id}',this.value)">
       <div class="target-stepper">
         <button onclick="bumpTypeMin('${t.id}',-1)">–</button>
-        <span class="tval">min ${t.weeklyMin}/wk</span>
+        <span class="tval">min ${t.weeklyMin}/14 meals</span>
         <button onclick="bumpTypeMin('${t.id}',1)">+</button>
       </div>
       <select onchange="setTypeSlotPref('${t.id}',this.value)">
@@ -1721,10 +1768,10 @@ function renderMealTypesSection(){
       </label>
     </div>`).join('');
   return `
-    <details class="cat-card">
+    <details class="cat-card"${openSections.has('types')?' open':''} ontoggle="trackSectionToggle('types',this.open)">
       <summary><h3 class="section-title">Meal types</h3><span class="sec-count">${state.mealTypes.length}</span></summary>
       <div class="cat-body">
-        <p class="section-desc">Practical tags — mindless, easy, or a slot preference. Set a weekly minimum to guarantee some each week; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
+        <p class="section-desc">Practical tags — mindless, easy, or a slot preference. The minimum is "per 14 meals" (a standard week) and scales to however many days you're planning; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on — the wizard also lets you override the overall pace for a stretch (normal/busier/very busy), which leans on these throughout, not just one day. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
         ${rows || '<p class="hint">No meal types yet.</p>'}
         <div class="add-cat-form">
           <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
@@ -1778,7 +1825,7 @@ function renderRecipesSection(){
     </div>`;
   }).join('');
   return `
-    <details class="cat-card">
+    <details class="cat-card"${openSections.has('recipes')?' open':''} ontoggle="trackSectionToggle('recipes',this.open)">
       <summary><h3 class="section-title">Recipes</h3><span class="sec-count">${state.recipes.filter(r=>!r.ephemeral).length}</span></summary>
       <div class="cat-body">
         <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;gap:6px;">
