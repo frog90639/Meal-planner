@@ -1253,14 +1253,21 @@ function proceedGeneratePlan(overwriteAll){
       const freq = r.frequencyWeeks || 1;
       return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, refDate) < freq);
     }
-    // avoid two meals sharing a meal base or an obvious shared ingredient (e.g. two stews,
-    // or two titles both mentioning chickpeas) landing on the same day
+    // the exact same recipe already sitting on this day (lunch === dinner) — always
+    // excluded, never part of the relax cascade below
+    function sameRecipeAlreadyOnDay(r, date){
+      const day = state.days[date];
+      if(!day) return false;
+      return ['lunch','dinner'].some(meal=>day[meal].status==='planned' && day[meal].recipeId===r.id);
+    }
+    // avoid two DIFFERENT meals sharing a meal base or an obvious shared ingredient
+    // (e.g. two stews, or two titles both mentioning chickpeas) landing on the same day
     function hasBaseConflictOnDay(r, date){
       const day = state.days[date];
       if(!day) return false;
       return ['lunch','dinner'].some(meal=>{
         const slot = day[meal];
-        if(slot.status!=='planned' || !slot.recipeId) return false;
+        if(slot.status!=='planned' || !slot.recipeId || slot.recipeId===r.id) return false;
         const other = getRecipe(slot.recipeId);
         if(!other) return false;
         const baseClash = (r.baseIds||[]).length && (other.baseIds||[]).some(id=>(r.baseIds||[]).includes(id));
@@ -1410,17 +1417,29 @@ function proceedGeneratePlan(overwriteAll){
     });
 
     // fill everything else — one weighted pick per remaining slot. Season and frequency
-    // are hard constraints: try season+frequency first, then relax frequency, then
-    // relax season, and only ignore both as a last resort when the library truly has
-    // nothing else to offer for that slot.
+    // are the two rules the user sets numbers for, so they're protected longest; the
+    // same-day "shared base/ingredient" check is a fuzzier nice-to-have and is the first
+    // thing relaxed if it would otherwise force the season or frequency rule to break.
+    // Only if every combination fails do we fall back to "anything in the library".
+    const RELAX_ORDER = [0,1,2,4,3,5,6,7]; // bit0=conflict, bit1=season, bit2=freq — fewest relaxations first
     openSlots.forEach(slot=>{
-      const seasonAndFreq = basePoolAll.filter(r=>seasonOkAt(r, slot.date) && freqOkAt(r, slot.date));
-      const seasonOnly = seasonAndFreq.length ? null : basePoolAll.filter(r=>seasonOkAt(r, slot.date));
-      const freqOnly = (seasonAndFreq.length || (seasonOnly&&seasonOnly.length)) ? null : basePoolAll.filter(r=>freqOkAt(r, slot.date));
-      let pool = seasonAndFreq.length ? seasonAndFreq : (seasonOnly && seasonOnly.length ? seasonOnly : (freqOnly && freqOnly.length ? freqOnly : basePoolAll));
+      // never repeat the literal same recipe twice on the same day — this is excluded
+      // up front and is not part of the relaxation cascade below
+      const dayPool = basePoolAll.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
+      const searchPool = dayPool.length ? dayPool : basePoolAll;
+      let pool = [];
+      for(const mask of RELAX_ORDER){
+        const relaxConflict = !!(mask & 1), relaxSeason = !!(mask & 2), relaxFreq = !!(mask & 4);
+        pool = searchPool.filter(r=>
+          (relaxSeason || seasonOkAt(r, slot.date)) &&
+          (relaxFreq || freqOkAt(r, slot.date)) &&
+          (relaxConflict || !hasBaseConflictOnDay(r, slot.date))
+        );
+        if(pool.length) break;
+      }
       if(!pool.length) return;
       const isBusySlot = !!(wizard.busyDate && slot.date===wizard.busyDate);
-      const picked = weightedPick(pool, slot.date, isBusySlot, r=>!hasBaseConflictOnDay(r, slot.date));
+      const picked = weightedPick(pool, slot.date, isBusySlot, null);
       if(picked) place(slot, picked);
     });
   }
