@@ -1952,11 +1952,12 @@ function renderRecipesSection(){
   const rows = state.recipes.filter(r=>!r.ephemeral).map(r=>{
     const bases = baseNames(r).join(', ') || 'no base yet';
     const types = typeNames(r).join(', ');
+    const lastUsed = r.lastUsedWeekStart ? `last used ${dayShort(r.lastUsedWeekStart)}` : 'never used';
     return `
     <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
       <div class="rinfo">
         <div class="rn">${escapeHtml(r.name)}</div>
-        <div class="rmeta">${escapeHtml(bases)}${types?' · '+escapeHtml(types):''} · ${freqLabel(r)}</div>
+        <div class="rmeta">${escapeHtml(bases)}${types?' · '+escapeHtml(types):''} · ${freqLabel(r)} · ${lastUsed}</div>
       </div>
       <span class="chev">›</span>
     </div>`;
