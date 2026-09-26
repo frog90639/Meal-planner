@@ -301,6 +301,7 @@ function ensureBusyDayDefault(){
   }
 }
 ensureBusyDayDefault();
+if(!state.recipeGroupBy) state.recipeGroupBy = 'base';
 
 /* ============================================================
    FIREBASE (live share)
@@ -931,9 +932,9 @@ function doMove(targetDate, targetMeal, swap){
 /* ============================================================
    WIZARD: Plan meals
    ============================================================ */
-let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
+let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
 function openWizard(){
-  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
+  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1, freezerText:'', newText:'', newItemsQueue:[], newItemsIndex:0 };
   renderWizardStep1();
 }
 function dots(n,total){
@@ -1006,11 +1007,16 @@ function wizardStep3(){
   const season = getSeason(wizard.startDate);
   const inSeasonBases = state.mealBases.filter(b=>!(b.excludedSeasons||[]).includes(season));
   const chips = inSeasonBases.map(b=>`<button type="button" class="chip ${wizard.fancyBaseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleFancyBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
+  const minBases = state.mealBases.filter(b=>b.ruleType==='min');
+  const skipChips = minBases.map(b=>`<button type="button" class="chip ${wizard.skipMinBaseIds.includes(b.id)?'active':''}" data-skipmin-id="${b.id}" onclick="toggleSkipMinBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
   showOverlay(`
     ${dots(3,6)}
     <h2>What are you fancying?</h2>
     <p class="desc">Tick any meal bases you want this stretch to lean on. Leave blank to just use your usual weekly targets from Settings. (Bases marked out of season for ${season} aren't shown.)</p>
     <div class="chip-group">${chips || '<p class="desc">No in-season meal bases to choose from.</p>'}</div>
+    ${minBases.length ? `
+    <p class="desc" style="margin-top:14px;">"At least" is normally a hard target — the planner will actively try to hit it whenever your recipe library allows. Tick any you want to skip just for this one-off plan:</p>
+    <div class="chip-group">${skipChips}</div>` : ''}
     <div class="btnrow">
       <button class="btn ghost" onclick="wizardStep2()">Back</button>
       <button class="btn primary" onclick="wizardStep4()">Next</button>
@@ -1021,6 +1027,11 @@ function toggleFancyBase(id){
   const i = wizard.fancyBaseIds.indexOf(id);
   if(i===-1) wizard.fancyBaseIds.push(id); else wizard.fancyBaseIds.splice(i,1);
   const el = document.querySelector(`.chip[data-id="${id}"]`); if(el) el.classList.toggle('active');
+}
+function toggleSkipMinBase(id){
+  const i = wizard.skipMinBaseIds.indexOf(id);
+  if(i===-1) wizard.skipMinBaseIds.push(id); else wizard.skipMinBaseIds.splice(i,1);
+  const el = document.querySelector(`.chip[data-skipmin-id="${id}"]`); if(el) el.classList.toggle('active');
 }
 
 function wizardStep4(){
@@ -1217,6 +1228,7 @@ function proceedGeneratePlan(overwriteAll){
 
   const slotOrder = [];
   const overrides = []; // filled in below whenever a slot can only be filled by breaking a rule
+  const shortfalls = []; // filled in below whenever an "at least" base target couldn't be fully met
   days.forEach(date=>{
     ['lunch','dinner'].forEach(meal=>{
       const key = date+'_'+meal;
@@ -1362,7 +1374,10 @@ function proceedGeneratePlan(overwriteAll){
         const b = getMealBase(id);
         if(!b) return;
         const usedCount = baseUsedCount[id]||0;
-        if(b.ruleType==='min'){
+        if(b.ruleType==='min' && !skipMinIds.includes(id)){
+          // the hard reservation pass above already tries to guarantee this target outright;
+          // this nudge just helps the general fill lean the same way for any slots it left
+          // open. Skipped for this run, it's treated like a plain 'upto' base instead.
           const effectiveTarget = scaledTarget(b.weeklyTarget);
           if(effectiveTarget>0){
             if(usedCount < effectiveTarget) w *= (1 + (effectiveTarget-usedCount)*1.5);
@@ -1412,6 +1427,42 @@ function proceedGeneratePlan(overwriteAll){
     let openSlots = remainingSlots.slice();
     const basePoolAll = state.recipes.filter(r=>!r.ephemeral && !isManualOnly(r));
 
+    // "at least" meal bases are a hard target, not a nudge — reserve slots for them up
+    // front (before multiply/general fill get a say) so the target actually gets hit
+    // whenever the library has enough eligible recipes, unless the user explicitly
+    // skipped this base for this one-off plan in the wizard.
+    const skipMinIds = wizard.skipMinBaseIds || [];
+    state.mealBases.filter(b=>b.ruleType==='min' && !skipMinIds.includes(b.id)).forEach(b=>{
+      const target = scaledTarget(b.weeklyTarget);
+      if(!target) return;
+      const eligibleRecipes = basePoolAll.filter(r=>(r.baseIds||[]).includes(b.id));
+      if(!eligibleRecipes.length) return;
+      let reserved = 0;
+      for(let i=0; i<target && openSlots.length; i++){
+        let placedThis = false;
+        for(const slot of openSlots){
+          const candidates = eligibleRecipes.filter(r=>
+            seasonOkAt(r, slot.date) && freqOkAt(r, slot.date) &&
+            !hasBaseConflictOnDay(r, slot.date) && !sameRecipeAlreadyOnDay(r, slot.date) &&
+            !usedThisRun.has(r.id)
+          );
+          if(candidates.length){
+            const picked = weightedPick(candidates, slot.date, false, null);
+            const idx = openSlots.indexOf(slot);
+            openSlots.splice(idx,1);
+            place(slot, picked);
+            reserved++;
+            placedThis = true;
+            break;
+          }
+        }
+        if(!placedThis) break; // no eligible slot/recipe combo left — stop trying for this base
+      }
+      if(reserved < target){
+        shortfalls.push({baseId:b.id, baseName:b.name, target, reserved});
+      }
+    });
+
     // multiply-flagged recipes get a chance to feature 2-3x, spaced across different
     // days (never twice the same day, every copy within 2 days of its first appearance)
     shuffle(basePoolAll.filter(r=>r.multiply)).forEach(r=>{
@@ -1444,33 +1495,44 @@ function proceedGeneratePlan(overwriteAll){
       placements.forEach(slot=>{ place(slot, r); });
     });
 
-    // fill everything else — one weighted pick per remaining slot. Season, frequency and
-    // the same-day "shared base/ingredient" check are all tried together first. If no
-    // recipe satisfies all three, we relax the fewest possible constraints — trying every
-    // way of relaxing exactly one, then exactly two, before ever ignoring all three — so
-    // no single rule is arbitrarily favored over another when there's a genuine shortage.
-    // Whatever ends up broken to fill the slot is recorded so it can be explained afterwards.
-    function poolForRelax(searchPool, slot, relaxSeason, relaxFreq, relaxConflict){
-      return searchPool.filter(r=>
+    // fill everything else — one weighted pick per remaining slot. Season and frequency
+    // are the rules with numbers behind them, so they're protected the longest. Variety
+    // (don't reuse a recipe already placed elsewhere this run) and the same-day "shared
+    // base/ingredient" check are both softer nice-to-haves, and are always fully explored
+    // — together, in every combination — before season or frequency is ever relaxed at
+    // all. Only once every reuse/conflict combination has been tried and failed does the
+    // search move on to relaxing season or frequency too. Whatever ends up broken to fill
+    // the slot is recorded so it can be explained afterwards.
+    function poolForFlags(pool, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse){
+      return pool.filter(r=>
         (relaxSeason || seasonOkAt(r, slot.date)) &&
         (relaxFreq || freqOkAt(r, slot.date)) &&
-        (relaxConflict || !hasBaseConflictOnDay(r, slot.date))
+        (relaxConflict || !hasBaseConflictOnDay(r, slot.date)) &&
+        (relaxReuse || !usedThisRun.has(r.id))
       );
     }
     openSlots.forEach(slot=>{
-      // never repeat the literal same recipe twice on the same day — this is excluded
-      // up front and is not part of the relaxation cascade below
+      // the exact same recipe twice on the exact same day is excluded up front, relaxed
+      // only if literally nothing else in the whole library is left to try
       const dayPool = basePoolAll.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
       const searchPool = dayPool.length ? dayPool : basePoolAll;
       let pool = [];
-      for(let count=0; count<=3 && !pool.length; count++){
-        const seen = new Set();
-        for(let mask=0; mask<8; mask++){
-          const pc = (mask&1?1:0)+(mask&2?1:0)+(mask&4?1:0);
-          if(pc!==count) continue;
-          poolForRelax(searchPool, slot, !!(mask&1), !!(mask&2), !!(mask&4)).forEach(r=>{
-            if(!seen.has(r.id)){ seen.add(r.id); pool.push(r); }
-          });
+      outer:
+      for(let outerCount=0; outerCount<=2; outerCount++){
+        for(let innerCount=0; innerCount<=2; innerCount++){
+          const seen = new Set();
+          for(let om=0; om<4; om++){
+            if(((om&1?1:0)+(om&2?1:0))!==outerCount) continue;
+            const relaxSeason = !!(om&1), relaxFreq = !!(om&2);
+            for(let im=0; im<4; im++){
+              if(((im&1?1:0)+(im&2?1:0))!==innerCount) continue;
+              const relaxConflict = !!(im&1), relaxReuse = !!(im&2);
+              poolForFlags(searchPool, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse).forEach(r=>{
+                if(!seen.has(r.id)){ seen.add(r.id); pool.push(r); }
+              });
+            }
+          }
+          if(pool.length) break outer;
         }
       }
       if(!pool.length) return;
@@ -1502,7 +1564,7 @@ function proceedGeneratePlan(overwriteAll){
 
   const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
   toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — your recipe library may be empty for some tags` : 'Plan complete');
-  if(overrides.length) showOverridesPopup(overrides);
+  if(overrides.length || shortfalls.length) showOverridesPopup(overrides, shortfalls);
 }
 
 // explain any rule the planner had to break to fill a slot, and offer a one-tap way
@@ -1516,9 +1578,10 @@ function overrideReasonParts(o){
     return v;
   });
 }
-function showOverridesPopup(overrides){
-  if(!overrides.length) return;
-  const rows = overrides.map(o=>{
+function showOverridesPopup(overrides, shortfalls){
+  overrides = overrides||[]; shortfalls = shortfalls||[];
+  if(!overrides.length && !shortfalls.length) return;
+  const overrideRows = overrides.map(o=>{
     const baseLabel = (o.baseIds||[]).map(id=>{ const b=getMealBase(id); return b?b.name:null; }).filter(Boolean).join('/');
     const reasonParts = overrideReasonParts(o);
     const preselect = JSON.stringify({baseIds:o.baseIds, typeIds:o.typeIds});
@@ -1527,13 +1590,20 @@ function showOverridesPopup(overrides){
       <button type="button" class="btn ghost small" onclick='openRecipeEditorPreselect(${preselect})'>+ Add a recipe for ${escapeHtml(baseLabel||'this')}</button>
     </div>`;
   }).join('');
+  const shortfallRows = shortfalls.map(s=>{
+    const preselect = JSON.stringify({baseIds:[s.baseId], typeIds:[]});
+    return `<div class="override-row" style="margin-bottom:10px;">
+      <p class="desc" style="margin:0 0 6px;"><strong>${escapeHtml(s.baseName)}:</strong> only fit ${s.reserved} of the "at least ${s.target}" target — there weren't enough eligible recipes in that base for this stretch.</p>
+      <button type="button" class="btn ghost small" onclick='openRecipeEditorPreselect(${preselect})'>+ Add a recipe for ${escapeHtml(s.baseName)}</button>
+    </div>`;
+  }).join('');
   showOverlay(`
     <div style="display:flex;justify-content:flex-end;margin:-6px -4px 0 0;">
       <button class="del-x" onclick="closeOverlay()" aria-label="Close" style="font-size:20px;">✕</button>
     </div>
     <h2 style="margin-top:-8px;">A few rules had to bend</h2>
-    <p class="desc">Everything got filled, but these meals broke a rule because nothing else fit:</p>
-    ${rows}
+    <p class="desc">Everything got filled, but here's what didn't go entirely to plan:</p>
+    ${overrideRows}${shortfallRows}
     <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Got it</button></div>
   `);
 }
@@ -1967,13 +2037,17 @@ function renderUntaggedSection(){
     </details>`;
 }
 
-/* ---- recipes (flat list + editor modal) ---- */
-function renderRecipesSection(){
-  const rows = state.recipes.filter(r=>!r.ephemeral).map(r=>{
-    const bases = baseNames(r).join(', ') || 'no base yet';
-    const types = typeNames(r).join(', ');
-    const lastUsed = r.lastUsedWeekStart ? `last used ${dayShort(r.lastUsedWeekStart)}` : 'never used';
-    return `
+/* ---- recipes (grouped list + editor modal) ---- */
+function setRecipeGroupBy(mode){
+  state.recipeGroupBy = mode;
+  saveState();
+  render();
+}
+function recipeRowHtml(r){
+  const bases = baseNames(r).join(', ') || 'no base yet';
+  const types = typeNames(r).join(', ');
+  const lastUsed = r.lastUsedWeekStart ? `last used ${dayShort(r.lastUsedWeekStart)}` : 'never used';
+  return `
     <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
       <div class="rinfo">
         <div class="rn">${escapeHtml(r.name)}</div>
@@ -1981,17 +2055,50 @@ function renderRecipesSection(){
       </div>
       <span class="chev">›</span>
     </div>`;
-  }).join('');
+}
+function renderRecipesSection(){
+  const all = state.recipes.filter(r=>!r.ephemeral).slice().sort((a,b)=>a.name.localeCompare(b.name));
+  const groupBy = state.recipeGroupBy || 'base';
+  let groupsHtml;
+  if(groupBy==='none'){
+    groupsHtml = all.map(recipeRowHtml).join('') || '<p class="hint">No recipes yet — add your first one.</p>';
+  } else {
+    const defs = groupBy==='base' ? state.mealBases : state.mealTypes;
+    const idsField = groupBy==='base' ? 'baseIds' : 'typeIds';
+    const groups = defs.map(d=>({id:d.id, name:d.name, recipes: all.filter(r=>(r[idsField]||[]).includes(d.id))}))
+      .filter(g=>g.recipes.length)
+      .sort((a,b)=>a.name.localeCompare(b.name));
+    const noGroupRecipes = all.filter(r=>!(r[idsField]||[]).length);
+    if(noGroupRecipes.length) groups.push({id:'__none__', name: groupBy==='base' ? 'No meal base' : 'No meal type', recipes: noGroupRecipes});
+    groupsHtml = groups.map(g=>{
+      const key = 'recipeGroup_'+groupBy+'_'+g.id;
+      return `
+      <details class="cat-card" style="box-shadow:none;padding:6px 2px;margin-bottom:2px;border-bottom:1px solid rgba(0,0,0,.06);border-radius:0;"${openSections.has(key)?' open':''} ontoggle="trackSectionToggle('${key}',this.open)">
+        <summary><h4 class="section-title" style="font-size:14px;margin:0;">${escapeHtml(g.name)}</h4><span class="sec-count">${g.recipes.length}</span></summary>
+        <div class="cat-body">${g.recipes.map(recipeRowHtml).join('')}</div>
+      </details>`;
+    }).join('') || '<p class="hint">No recipes yet — add your first one.</p>';
+  }
   return `
     <details class="cat-card"${openSections.has('recipes')?' open':''} ontoggle="trackSectionToggle('recipes',this.open)">
-      <summary><h3 class="section-title">Recipes</h3><span class="sec-count">${state.recipes.filter(r=>!r.ephemeral).length}</span></summary>
+      <summary><h3 class="section-title">Recipes</h3><span class="sec-count">${all.length}</span></summary>
       <div class="cat-body">
-        <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:10px;gap:6px;">
-          <button class="btn small" style="background:var(--mustard);color:var(--mustard-ink);" onclick="openBulkImport()">Bulk import</button>
-          <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:6px;flex-wrap:wrap;">
+          <div class="field" style="margin:0;">
+            <label style="font-size:11.5px;color:var(--ink-soft);display:block;">Group by</label>
+            <select onchange="setRecipeGroupBy(this.value)">
+              <option value="base" ${groupBy==='base'?'selected':''}>Meal base</option>
+              <option value="type" ${groupBy==='type'?'selected':''}>Meal type</option>
+              <option value="none" ${groupBy==='none'?'selected':''}>None (alphabetical)</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn small" style="background:var(--mustard);color:var(--mustard-ink);" onclick="openBulkImport()">Bulk import</button>
+            <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
+          </div>
         </div>
-        <p class="section-desc">Tap a recipe to edit its bases, types, and rotation.</p>
-        ${rows || '<p class="hint">No recipes yet — add your first one.</p>'}
+        <p class="section-desc">Tap a recipe to edit its bases, types, and rotation. Recipes with more than one base or type show up in each of those groups.</p>
+        ${groupsHtml}
       </div>
     </details>`;
 }
