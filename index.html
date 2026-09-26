@@ -274,7 +274,26 @@ function loadState(){
   return seedDefaultState();
 }
 function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+// "last used" must always reflect what's actually still on the calendar — a recipe
+// that gets cleared, swapped out, moved, or wiped by a "replace the week" re-plan should
+// stop being treated as recently used. Rather than trying to patch every single place
+// that removes or replaces a slot (easy to miss one), this recomputes it directly from
+// state.days: the true source of truth. Call after any change to state.days.
+function recomputeAllLastUsed(){
+  const latestByRecipe = {};
+  Object.keys(state.days).forEach(d=>{
+    const day = state.days[d];
+    ['lunch','dinner'].forEach(m=>{
+      const slot = day[m];
+      if(slot.status==='planned' && slot.recipeId){
+        if(!latestByRecipe[slot.recipeId] || d>latestByRecipe[slot.recipeId]) latestByRecipe[slot.recipeId]=d;
+      }
+    });
+  });
+  state.recipes.forEach(r=>{ r.lastUsedWeekStart = latestByRecipe[r.id] || null; });
+}
 let state = loadState();
+recomputeAllLastUsed(); // self-heal any drift already baked into existing saved data
 function ensureBusyDayDefault(){
   if(!state.mealTypes.some(t=>t.busyDay)){
     const m = state.mealTypes.find(t=>t.name.trim().toLowerCase()==='mindless');
@@ -615,6 +634,7 @@ function openClearWeekConfirm(){
 }
 function clearCurrentWeek(){
   weekDates(viewWeekStart).forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
+  recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -751,8 +771,11 @@ function assignSlot(date, meal, recipeId, forceStatus){
   else {
     const r = getRecipe(recipeId);
     day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (baseNames(r).join(', ')||null) : null};
-    if(r){ r.lastUsedWeekStart = date; removeIfEphemeral(r); }
+    if(r) removeIfEphemeral(r);
   }
+  // whatever recipe left this slot (cleared, marked out, or swapped for something else)
+  // must stop being treated as "used" here if it isn't actually on the calendar any more
+  recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -764,6 +787,7 @@ function assignFreeText(date, meal){
   if(!text){ input.focus(); return; }
   const day = ensureDay(date);
   day[meal] = {status:'planned', recipeId:null, recipeName:text, baseLabel:null};
+  recomputeAllLastUsed(); // in case a real recipe was sitting in this slot before
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -886,16 +910,6 @@ function doMove(targetDate, targetMeal, swap){
   const dstDay = ensureDay(targetDate);
   const srcSlot = srcDay[moveSource.meal];
   const dstSlot = dstDay[targetMeal];
-  // a moved recipe is now eaten on its new date, so its "last used" date must follow it —
-  // otherwise future frequency ("every N weeks") checks keep using the old, now-wrong date
-  if(srcSlot.status==='planned' && srcSlot.recipeId){
-    const r = getRecipe(srcSlot.recipeId);
-    if(r) r.lastUsedWeekStart = targetDate;
-  }
-  if(swap && dstSlot.status==='planned' && dstSlot.recipeId){
-    const r2 = getRecipe(dstSlot.recipeId);
-    if(r2) r2.lastUsedWeekStart = moveSource.date;
-  }
   if(swap){
     dstDay[targetMeal] = srcSlot;
     srcDay[moveSource.meal] = dstSlot;
@@ -904,6 +918,9 @@ function doMove(targetDate, targetMeal, swap){
     srcDay[moveSource.meal] = emptySlot();
   }
   moveSource = null;
+  // a moved (or swapped) recipe's "last used" date must follow it to wherever it actually
+  // ended up on the calendar now — recompute from the calendar itself rather than guessing
+  recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -1475,6 +1492,9 @@ function proceedGeneratePlan(overwriteAll){
 
   state.lastViewedWeekStart = mondayOnOrBefore(startISO);
   viewWeekStart = mondayOnOrBefore(startISO);
+  // a "replace the week" re-plan wipes and refills days directly, bypassing assignSlot —
+  // reconcile every recipe's "last used" date against the calendar as it now stands
+  recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
@@ -2199,6 +2219,7 @@ function importData(evt){
       const data = JSON.parse(reader.result);
       if(!data.mealBases || !data.mealTypes || !data.recipes || !data.days) throw new Error('bad file');
       state = data;
+      recomputeAllLastUsed(); // fix up any drift already present in the imported file
       saveState();
       toast('Backup restored');
       render();
