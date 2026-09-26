@@ -1760,6 +1760,7 @@ function renderSettings(){
       </div>
     </div>
     <div class="settings-wrap">
+      ${renderUntaggedSection()}
       ${renderMealBasesSection()}
       ${renderMealTypesSection()}
       ${renderRecipesSection()}
@@ -1913,6 +1914,37 @@ function deleteMealType(id){
   state.mealTypes = state.mealTypes.filter(t=>t.id!==id);
   state.recipes.forEach(r=>{ r.typeIds = (r.typeIds||[]).filter(tid=>tid!==id); });
   saveState(); render();
+}
+
+/* ---- recipes missing a meal base and/or meal type tag — these silently skip any
+   season/frequency/minimum rule since those all key off the tags, so surface them
+   somewhere obvious and let a tap jump straight into fixing it ---- */
+function renderUntaggedSection(){
+  const untagged = state.recipes.filter(r=>!r.ephemeral && (!r.baseIds||!r.baseIds.length) && (!r.typeIds||!r.typeIds.length));
+  const noBaseOnly = state.recipes.filter(r=>!r.ephemeral && (!r.baseIds||!r.baseIds.length) && r.typeIds && r.typeIds.length);
+  const noTypeOnly = state.recipes.filter(r=>!r.ephemeral && r.baseIds && r.baseIds.length && (!r.typeIds||!r.typeIds.length));
+  const all = [
+    ...untagged.map(r=>({r, missing:'no base or type'})),
+    ...noBaseOnly.map(r=>({r, missing:'no base'})),
+    ...noTypeOnly.map(r=>({r, missing:'no type'}))
+  ];
+  if(!all.length) return '';
+  const rows = all.map(({r,missing})=>`
+    <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
+      <div class="rinfo">
+        <div class="rn">${escapeHtml(r.name)}</div>
+        <div class="rmeta" style="color:var(--coral-dark, #c0503b);">${escapeHtml(missing)}</div>
+      </div>
+      <span class="chev">›</span>
+    </div>`).join('');
+  return `
+    <details class="cat-card"${openSections.has('untagged')?' open':''} ontoggle="trackSectionToggle('untagged',this.open)">
+      <summary><h3 class="section-title">⚠️ Needs tagging</h3><span class="sec-count">${all.length}</span></summary>
+      <div class="cat-body">
+        <p class="section-desc">These recipes have no meal base and/or no meal type, so season exclusions and weekly base/type minimums never apply to them (frequency still works — that's set per recipe, not by tag). Tap one to fix it.</p>
+        ${rows}
+      </div>
+    </details>`;
 }
 
 /* ---- recipes (flat list + editor modal) ---- */
