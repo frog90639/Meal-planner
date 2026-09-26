@@ -886,6 +886,16 @@ function doMove(targetDate, targetMeal, swap){
   const dstDay = ensureDay(targetDate);
   const srcSlot = srcDay[moveSource.meal];
   const dstSlot = dstDay[targetMeal];
+  // a moved recipe is now eaten on its new date, so its "last used" date must follow it —
+  // otherwise future frequency ("every N weeks") checks keep using the old, now-wrong date
+  if(srcSlot.status==='planned' && srcSlot.recipeId){
+    const r = getRecipe(srcSlot.recipeId);
+    if(r) r.lastUsedWeekStart = targetDate;
+  }
+  if(swap && dstSlot.status==='planned' && dstSlot.recipeId){
+    const r2 = getRecipe(dstSlot.recipeId);
+    if(r2) r2.lastUsedWeekStart = moveSource.date;
+  }
   if(swap){
     dstDay[targetMeal] = srcSlot;
     srcDay[moveSource.meal] = dstSlot;
@@ -1450,11 +1460,14 @@ function proceedGeneratePlan(overwriteAll){
       const isBusySlot = !!(wizard.busyDate && slot.date===wizard.busyDate);
       const picked = weightedPick(pool, slot.date, isBusySlot, null);
       if(picked){
-        place(slot, picked);
+        // check what rules this pick actually breaks BEFORE placing — place() sets
+        // lastUsedWeekStart to today, which would make freqOkAt look violated afterwards
+        // even for a recipe that had never been used before
         const violated = [];
         if(!seasonOkAt(picked, slot.date)) violated.push('season');
         if(!freqOkAt(picked, slot.date)) violated.push('frequency');
         if(hasBaseConflictOnDay(picked, slot.date)) violated.push('sameday');
+        place(slot, picked);
         if(violated.length) overrides.push({date:slot.date, meal:slot.meal, recipeId:picked.id, recipeName:picked.name, baseIds:(picked.baseIds||[]).slice(), typeIds:(picked.typeIds||[]).slice(), violated});
       }
     });
