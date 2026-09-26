@@ -1247,6 +1247,12 @@ function proceedGeneratePlan(overwriteAll){
       const season = getSeason(refDate);
       return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
     }
+    // hard "not more often than every N weeks" check — a recipe used inside its own
+    // frequency window is genuinely ineligible for that slot, not just down-weighted
+    function freqOkAt(r, refDate){
+      const freq = r.frequencyWeeks || 1;
+      return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, refDate) < freq);
+    }
     // avoid two meals sharing a meal base or an obvious shared ingredient (e.g. two stews,
     // or two titles both mentioning chickpeas) landing on the same day
     function hasBaseConflictOnDay(r, date){
@@ -1341,6 +1347,8 @@ function proceedGeneratePlan(overwriteAll){
         }
       });
       if(usedThisRun.has(r.id)) w *= 0.1;
+      // frequency is now a hard filter before pools reach here (see freqOkAt); this
+      // weight only matters in the rare relaxed-fallback case where it's re-included
       if(r.lastUsedWeekStart){
         const freq = r.frequencyWeeks || 1;
         if(weeksBetween(r.lastUsedWeekStart, refDate) < freq) w *= 0.12;
@@ -1374,18 +1382,25 @@ function proceedGeneratePlan(overwriteAll){
     shuffle(basePoolAll.filter(r=>r.multiply)).forEach(r=>{
       if(!openSlots.length || usedThisRun.has(r.id)) return;
       if(Math.random() < 0.35) return; // don't force every multiply recipe in every single run
+      // a multiply recipe must still respect its own season and frequency window —
+      // if it's not eligible to start anywhere in this run, skip it entirely
+      const eligibleStartSlots = openSlots.filter(s=>seasonOkAt(r,s.date) && freqOkAt(r,s.date));
+      if(!eligibleStartSlots.length) return;
       const copies = Math.random()<0.5?2:3;
-      let startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
-      if(startIdx===-1) startIdx = openSlots.findIndex(s=>s.date!==wizard.busyDate);
-      if(startIdx===-1) startIdx = 0;
-      const [startSlot] = openSlots.splice(startIdx,1);
+      let startSlot = eligibleStartSlots.find(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
+      if(!startSlot) startSlot = eligibleStartSlots.find(s=>s.date!==wizard.busyDate);
+      if(!startSlot) startSlot = eligibleStartSlots[0];
+      const startIdx = openSlots.indexOf(startSlot);
+      openSlots.splice(startIdx,1);
       const startDate = startSlot.date;
       const maxDate = addDays(startDate, 2);
       const placements = [startSlot];
       const usedDates = new Set([startDate]);
       for(let k=1;k<copies;k++){
-        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && !hasBaseConflictOnDay(r,s.date));
-        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate);
+        // once placed, later copies only need to still be in-season/in-window at their
+        // own date and within the 2-day spread of the first appearance
+        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date) && !hasBaseConflictOnDay(r,s.date));
+        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date));
         if(idx===-1) break;
         const [s] = openSlots.splice(idx,1);
         placements.push(s);
@@ -1394,11 +1409,15 @@ function proceedGeneratePlan(overwriteAll){
       placements.forEach(slot=>{ place(slot, r); });
     });
 
-    // fill everything else — one weighted pick per remaining slot, always fills if
-    // any recipe exists in the library at all
+    // fill everything else — one weighted pick per remaining slot. Season and frequency
+    // are hard constraints: try season+frequency first, then relax frequency, then
+    // relax season, and only ignore both as a last resort when the library truly has
+    // nothing else to offer for that slot.
     openSlots.forEach(slot=>{
-      let pool = basePoolAll.filter(r=>seasonOkAt(r, slot.date));
-      if(!pool.length) pool = basePoolAll;
+      const seasonAndFreq = basePoolAll.filter(r=>seasonOkAt(r, slot.date) && freqOkAt(r, slot.date));
+      const seasonOnly = seasonAndFreq.length ? null : basePoolAll.filter(r=>seasonOkAt(r, slot.date));
+      const freqOnly = (seasonAndFreq.length || (seasonOnly&&seasonOnly.length)) ? null : basePoolAll.filter(r=>freqOkAt(r, slot.date));
+      let pool = seasonAndFreq.length ? seasonAndFreq : (seasonOnly && seasonOnly.length ? seasonOnly : (freqOnly && freqOnly.length ? freqOnly : basePoolAll));
       if(!pool.length) return;
       const isBusySlot = !!(wizard.busyDate && slot.date===wizard.busyDate);
       const picked = weightedPick(pool, slot.date, isBusySlot, r=>!hasBaseConflictOnDay(r, slot.date));
