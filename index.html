@@ -1189,6 +1189,7 @@ function proceedGeneratePlan(overwriteAll){
   }
 
   const slotOrder = [];
+  const overrides = []; // filled in below whenever a slot can only be filled by breaking a rule
   days.forEach(date=>{
     ['lunch','dinner'].forEach(meal=>{
       const key = date+'_'+meal;
@@ -1416,31 +1417,46 @@ function proceedGeneratePlan(overwriteAll){
       placements.forEach(slot=>{ place(slot, r); });
     });
 
-    // fill everything else — one weighted pick per remaining slot. Season and frequency
-    // are the two rules the user sets numbers for, so they're protected longest; the
-    // same-day "shared base/ingredient" check is a fuzzier nice-to-have and is the first
-    // thing relaxed if it would otherwise force the season or frequency rule to break.
-    // Only if every combination fails do we fall back to "anything in the library".
-    const RELAX_ORDER = [0,1,2,4,3,5,6,7]; // bit0=conflict, bit1=season, bit2=freq — fewest relaxations first
+    // fill everything else — one weighted pick per remaining slot. Season, frequency and
+    // the same-day "shared base/ingredient" check are all tried together first. If no
+    // recipe satisfies all three, we relax the fewest possible constraints — trying every
+    // way of relaxing exactly one, then exactly two, before ever ignoring all three — so
+    // no single rule is arbitrarily favored over another when there's a genuine shortage.
+    // Whatever ends up broken to fill the slot is recorded so it can be explained afterwards.
+    function poolForRelax(searchPool, slot, relaxSeason, relaxFreq, relaxConflict){
+      return searchPool.filter(r=>
+        (relaxSeason || seasonOkAt(r, slot.date)) &&
+        (relaxFreq || freqOkAt(r, slot.date)) &&
+        (relaxConflict || !hasBaseConflictOnDay(r, slot.date))
+      );
+    }
     openSlots.forEach(slot=>{
       // never repeat the literal same recipe twice on the same day — this is excluded
       // up front and is not part of the relaxation cascade below
       const dayPool = basePoolAll.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
       const searchPool = dayPool.length ? dayPool : basePoolAll;
       let pool = [];
-      for(const mask of RELAX_ORDER){
-        const relaxConflict = !!(mask & 1), relaxSeason = !!(mask & 2), relaxFreq = !!(mask & 4);
-        pool = searchPool.filter(r=>
-          (relaxSeason || seasonOkAt(r, slot.date)) &&
-          (relaxFreq || freqOkAt(r, slot.date)) &&
-          (relaxConflict || !hasBaseConflictOnDay(r, slot.date))
-        );
-        if(pool.length) break;
+      for(let count=0; count<=3 && !pool.length; count++){
+        const seen = new Set();
+        for(let mask=0; mask<8; mask++){
+          const pc = (mask&1?1:0)+(mask&2?1:0)+(mask&4?1:0);
+          if(pc!==count) continue;
+          poolForRelax(searchPool, slot, !!(mask&1), !!(mask&2), !!(mask&4)).forEach(r=>{
+            if(!seen.has(r.id)){ seen.add(r.id); pool.push(r); }
+          });
+        }
       }
       if(!pool.length) return;
       const isBusySlot = !!(wizard.busyDate && slot.date===wizard.busyDate);
       const picked = weightedPick(pool, slot.date, isBusySlot, null);
-      if(picked) place(slot, picked);
+      if(picked){
+        place(slot, picked);
+        const violated = [];
+        if(!seasonOkAt(picked, slot.date)) violated.push('season');
+        if(!freqOkAt(picked, slot.date)) violated.push('frequency');
+        if(hasBaseConflictOnDay(picked, slot.date)) violated.push('sameday');
+        if(violated.length) overrides.push({date:slot.date, meal:slot.meal, recipeId:picked.id, recipeName:picked.name, baseIds:(picked.baseIds||[]).slice(), typeIds:(picked.typeIds||[]).slice(), violated});
+      }
     });
   }
 
@@ -1453,6 +1469,44 @@ function proceedGeneratePlan(overwriteAll){
 
   const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
   toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — your recipe library may be empty for some tags` : 'Plan complete');
+  if(overrides.length) showOverridesPopup(overrides);
+}
+
+// explain any rule the planner had to break to fill a slot, and offer a one-tap way
+// to add more recipes to whichever category was short
+function overrideReasonParts(o){
+  const baseLabel = (o.baseIds||[]).map(id=>{ const b=getMealBase(id); return b?b.name:null; }).filter(Boolean).join('/');
+  return o.violated.map(v=>{
+    if(v==='season') return `${baseLabel||'its meal base'} is marked out of season right now`;
+    if(v==='frequency') return `its repeat rule wants a longer gap since it was last used`;
+    if(v==='sameday') return `something with a similar base or ingredient was already planned that day`;
+    return v;
+  });
+}
+function showOverridesPopup(overrides){
+  if(!overrides.length) return;
+  const rows = overrides.map(o=>{
+    const baseLabel = (o.baseIds||[]).map(id=>{ const b=getMealBase(id); return b?b.name:null; }).filter(Boolean).join('/');
+    const reasonParts = overrideReasonParts(o);
+    const preselect = JSON.stringify({baseIds:o.baseIds, typeIds:o.typeIds});
+    return `<div class="override-row" style="margin-bottom:10px;">
+      <p class="desc" style="margin:0 0 6px;"><strong>${escapeHtml(dayShort(o.date))} ${o.meal}:</strong> put in "${escapeHtml(o.recipeName)}" even though ${reasonParts.map(escapeHtml).join(' and ')} — there weren't enough other eligible recipes at that point.</p>
+      <button type="button" class="btn ghost small" onclick='openRecipeEditorPreselect(${preselect})'>+ Add a recipe for ${escapeHtml(baseLabel||'this')}</button>
+    </div>`;
+  }).join('');
+  showOverlay(`
+    <div style="display:flex;justify-content:flex-end;margin:-6px -4px 0 0;">
+      <button class="del-x" onclick="closeOverlay()" aria-label="Close" style="font-size:20px;">✕</button>
+    </div>
+    <h2 style="margin-top:-8px;">A few rules had to bend</h2>
+    <p class="desc">Everything got filled, but these meals broke a rule because nothing else fit:</p>
+    ${rows}
+    <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Got it</button></div>
+  `);
+}
+function openRecipeEditorPreselect(preselect){
+  closeOverlay();
+  openRecipeEditor(null, preselect);
 }
 
 /* ============================================================
