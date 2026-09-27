@@ -191,8 +191,10 @@
   .backup-row .btn{background:var(--bg-elevated);color:var(--ink);border:1px solid var(--board-line);}
   .hint{color:var(--ink-soft);font-size:11.5px;text-align:center;margin-top:10px;line-height:1.5;}
   #fileimport{display:none;}
-  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--paper);color:var(--ink);padding:10px 18px;border-radius:20px;font-size:13.5px;box-shadow:var(--shadow);z-index:99;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;display:flex;align-items:center;gap:10px;max-width:90vw;}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+  .toast.with-action{pointer-events:auto;}
+  .toast-undo{background:none;border:none;color:var(--brick-dark);font-weight:700;font-size:13.5px;padding:2px 0;cursor:pointer;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -369,12 +371,48 @@ const SEASONS = ['winter','spring','summer','autumn'];
    TOAST
    ============================================================ */
 let toastTimer;
-function toast(msg){
+function toast(msg, opts){
   const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
+  opts = opts || {};
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
+  if(opts.actionLabel && opts.onAction){
+    el.innerHTML = `<span>${escapeHtml(msg)}</span><button type="button" class="toast-undo">${escapeHtml(opts.actionLabel)}</button>`;
+    el.classList.add('show','with-action');
+    const btn = el.querySelector('.toast-undo');
+    if(btn) btn.onclick = (e)=>{
+      if(e && e.stopPropagation) e.stopPropagation();
+      clearTimeout(toastTimer);
+      el.classList.remove('show','with-action');
+      opts.onAction();
+    };
+    toastTimer = setTimeout(()=>el.classList.remove('show','with-action'), opts.duration || 5000);
+  } else {
+    el.textContent = msg;
+    el.classList.remove('with-action');
+    el.classList.add('show');
+    toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
+  }
+}
+
+/* ============================================================
+   QUICK UNDO — a single-step safety net for swaps, moves, clears
+   and deletes. Each of those calls captureUndo() right before it
+   mutates state, then shows a toast with an Undo action; tapping
+   it restores the whole app state exactly as it was.
+   ============================================================ */
+let undoSnapshot = null;
+function captureUndo(){ undoSnapshot = JSON.stringify(state); }
+function undoLastAction(){
+  if(!undoSnapshot) return;
+  try{ state = JSON.parse(undoSnapshot); }catch(e){ return; }
+  undoSnapshot = null;
+  saveState();
+  refreshLiveShare();
+  render();
+  toast('Undone');
+}
+function toastWithUndo(msg){
+  toast(msg, {actionLabel:'Undo', onAction:undoLastAction});
 }
 
 /* ============================================================
@@ -417,8 +455,10 @@ function addFreezerBankItem(name){
   return item;
 }
 function removeFreezerBankItem(id){
+  captureUndo();
   state.freezerBank = state.freezerBank.filter(f=>f.id!==id);
   saveState(); render();
+  toastWithUndo('Removed from freezer bank');
 }
 function renameFreezerBankItem(id, name){
   const f = state.freezerBank.find(f=>f.id===id);
@@ -664,13 +704,14 @@ function openClearWeekConfirm(){
   `);
 }
 function clearCurrentWeek(){
+  captureUndo();
   weekDates(viewWeekStart).forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
   recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
   render();
-  toast('Week cleared');
+  toastWithUndo('Week cleared');
 }
 
 /* ============================================================
@@ -796,7 +837,9 @@ function quickAdd(date, meal){
   assignSlot(date, meal, recipe.id);
 }
 function assignSlot(date, meal, recipeId, forceStatus){
+  captureUndo();
   const day = ensureDay(date);
+  const had = day[meal];
   if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null}; }
   else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
   else {
@@ -811,11 +854,14 @@ function assignSlot(date, meal, recipeId, forceStatus){
   refreshLiveShare();
   closeOverlay();
   render();
+  if(forceStatus==='out') toastWithUndo('Marked as out');
+  else if(forceStatus==='empty' && had.status!=='empty') toastWithUndo('Cleared');
 }
 function assignFreeText(date, meal){
   const input = document.getElementById('freeTextInput');
   const text = input.value.trim();
   if(!text){ input.focus(); return; }
+  captureUndo();
   const day = ensureDay(date);
   day[meal] = {status:'planned', recipeId:null, recipeName:text, baseLabel:null};
   recomputeAllLastUsed(); // in case a real recipe was sitting in this slot before
@@ -876,7 +922,7 @@ function swapMeal(date, meal){
   });
   const picked = candidates[0];
   assignSlot(date, meal, picked.id);
-  toast(`Swapped in ${picked.name}`);
+  toastWithUndo(`Swapped in ${picked.name}`);
 }
 
 /* ---- move: swipe a planned meal left to relocate it to a different day/meal ---- */
@@ -937,6 +983,7 @@ function confirmMoveTarget(){
   }
 }
 function doMove(targetDate, targetMeal, swap){
+  captureUndo();
   const srcDay = ensureDay(moveSource.date);
   const dstDay = ensureDay(targetDate);
   const srcSlot = srcDay[moveSource.meal];
@@ -956,7 +1003,7 @@ function doMove(targetDate, targetMeal, swap){
   refreshLiveShare();
   closeOverlay();
   render();
-  toast(swap ? 'Swapped' : 'Moved');
+  toastWithUndo(swap ? 'Swapped' : 'Moved');
 }
 
 /* ============================================================
@@ -2020,9 +2067,11 @@ function toggleBaseSeason(id, season){
 }
 function deleteMealBase(id){
   if(!confirm('Delete this meal base? Recipes using it will just lose that tag.')) return;
+  captureUndo();
   state.mealBases = state.mealBases.filter(b=>b.id!==id);
   state.recipes.forEach(r=>{ r.baseIds = (r.baseIds||[]).filter(bid=>bid!==id); });
   saveState(); render();
+  toastWithUndo('Meal base deleted');
 }
 
 /* ---- meal types ---- */
@@ -2095,9 +2144,11 @@ function setTypeShowOnMeal(id, checked){
 }
 function deleteMealType(id){
   if(!confirm('Delete this meal type? Recipes using it will just lose that tag.')) return;
+  captureUndo();
   state.mealTypes = state.mealTypes.filter(t=>t.id!==id);
   state.recipes.forEach(r=>{ r.typeIds = (r.typeIds||[]).filter(tid=>tid!==id); });
   saveState(); render();
+  toastWithUndo('Meal type deleted');
 }
 
 /* ---- recipes missing a meal base and/or meal type tag — these silently skip any
@@ -2394,10 +2445,12 @@ function saveRecipeFromEditor(){
 }
 function deleteRecipeFromEditor(id){
   if(!confirm('Delete this recipe?')) return;
+  captureUndo();
   state.recipes = state.recipes.filter(r=>r.id!==id);
   saveState();
   closeOverlay();
   render();
+  toastWithUndo('Recipe deleted');
 }
 
 /* ============================================================
