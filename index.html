@@ -390,6 +390,12 @@ function getMealBase(id){ return state.mealBases.find(b=>b.id===id); }
 function getMealType(id){ return state.mealTypes.find(t=>t.id===id); }
 function baseNames(r){ return (r.baseIds||[]).map(id=>{const b=getMealBase(id); return b?b.name:null;}).filter(Boolean); }
 function typeNames(r){ return (r.typeIds||[]).map(id=>{const t=getMealType(id); return t?t.name:null;}).filter(Boolean); }
+// the small label under a planned meal's name — shows the names of any meal types
+// flagged "show under the meal" (Settings → Meal types), and nothing else; the meal
+// base is never shown here any more
+function mealDisplayLabel(r){
+  return (r.typeIds||[]).map(id=>{ const t=getMealType(id); return t && t.showOnMeal ? t.name : null; }).filter(Boolean).join(', ');
+}
 function getOrCreateMealBase(name){
   let b = state.mealBases.find(b=>b.name.toLowerCase()===name.toLowerCase());
   if(!b){ b = {id:uid(), name, weeklyTarget:0, ruleType:'upto', excludedSeasons:[]}; state.mealBases.push(b); }
@@ -503,7 +509,7 @@ function renderMealRow(date, meal, slot){
   } else if(slot.status==='planned' && (slot.recipeName || (slot.recipeId && getRecipe(slot.recipeId)))){
     const recipe = slot.recipeId ? getRecipe(slot.recipeId) : null;
     const name = slot.recipeName || (recipe ? recipe.name : '');
-    const baseTxt = slot.baseLabel || (recipe ? baseNames(recipe).join(', ') : '');
+    const baseTxt = recipe ? mealDisplayLabel(recipe) : (slot.baseLabel || '');
     inner = `<div class="slot planned"><span class="rname">${escapeHtml(name)}</span><span class="rcat">${escapeHtml(baseTxt||'')}</span></div>`;
   } else {
     inner = `<div class="slot empty">+ add meal</div>`;
@@ -771,7 +777,7 @@ function assignSlot(date, meal, recipeId, forceStatus){
   else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
   else {
     const r = getRecipe(recipeId);
-    day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (baseNames(r).join(', ')||null) : null};
+    day[meal] = {status:'planned', recipeId, recipeName: r?r.name:null, baseLabel: r ? (mealDisplayLabel(r)||null) : null};
     if(r) removeIfEphemeral(r);
   }
   // whatever recipe left this slot (cleared, marked out, or swapped for something else)
@@ -1271,7 +1277,7 @@ function proceedGeneratePlan(overwriteAll){
     const r = priorityPool[i];
     const slot = slotOrder[i];
     const day = state.days[slot.date];
-    day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+    day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
     r.lastUsedWeekStart = slot.date;
   }
   priorityPool.slice(0,priorityCount).forEach(r=>removeIfEphemeral(r));
@@ -1417,7 +1423,7 @@ function proceedGeneratePlan(overwriteAll){
     }
     function place(slot, r){
       const day = state.days[slot.date];
-      day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: baseNames(r).join(', ')||null};
+      day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
       r.lastUsedWeekStart = slot.date;
       usedThisRun.add(r.id);
       (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
@@ -1962,6 +1968,10 @@ function renderMealTypesSection(){
         <input type="checkbox" ${t.manualOnly?'checked':''} onchange="setTypeManualOnly('${t.id}',this.checked)">
         only on selection — never auto-pulled, only when manually picked
       </label>
+      <label class="busy-toggle">
+        <input type="checkbox" ${t.showOnMeal?'checked':''} onchange="setTypeShowOnMeal('${t.id}',this.checked)">
+        show under the meal when planned (replaces the meal base label)
+      </label>
     </div>`).join('');
   return `
     <details class="cat-card"${openSections.has('types')?' open':''} ontoggle="trackSectionToggle('types',this.open)">
@@ -1980,7 +1990,7 @@ function addMealType(){
   const input = document.getElementById('newTypeName');
   const name = input.value.trim();
   if(!name) return;
-  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false});
+  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false, showOnMeal:false});
   saveState(); render();
 }
 function renameMealType(id, name){
@@ -1998,6 +2008,9 @@ function setTypeManualOnly(id, checked){
 }
 function setTypeBusyDay(id, checked){
   const t = getMealType(id); if(t){ t.busyDay = !!checked; saveState(); }
+}
+function setTypeShowOnMeal(id, checked){
+  const t = getMealType(id); if(t){ t.showOnMeal = !!checked; saveState(); render(); }
 }
 function deleteMealType(id){
   if(!confirm('Delete this meal type? Recipes using it will just lose that tag.')) return;
