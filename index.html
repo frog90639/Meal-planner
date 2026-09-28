@@ -4,8 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Meal Plan</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Meal Plan">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <style>
   :root{
     --bg:#FFF3E1;
@@ -210,6 +215,14 @@ const STORE_KEY = 'mealPlan.v3';
 const V2_KEY = 'mealPlan.v2';
 const V1_KEY = 'mealPlan.v1';
 
+// cloud-sync state — declared up top so saveState() (defined below, but callable
+// from the moment the app loads) can safely reference them regardless of load order
+let firebaseDb = null;
+let firebaseAuth = null;
+let currentUser = null;
+let applyingRemoteState = false;
+let cloudSyncTimer = null;
+
 function uid(){ return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); }
 
 function seedDefaultState(){
@@ -275,7 +288,17 @@ function loadState(){
   }catch(e){}
   return seedDefaultState();
 }
-function saveState(){ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }
+function saveState(){
+  localStorage.setItem(STORE_KEY, JSON.stringify(state));
+  // if signed in, mirror this save up to the cloud shortly after — debounced so a
+  // flurry of edits doesn't fire a write per keystroke. Skipped while we're in the
+  // middle of applying a state that just came down FROM the cloud, so we don't
+  // immediately write it straight back and spin.
+  if(currentUser && firebaseDb && !applyingRemoteState){
+    clearTimeout(cloudSyncTimer);
+    cloudSyncTimer = setTimeout(()=>{ pushStateToCloud(currentUser.uid); }, 800);
+  }
+}
 // "last used" must always reflect what's actually still on the calendar — a recipe
 // that gets cleared, swapped out, moved, or wiped by a "replace the week" re-plan should
 // stop being treated as recently used. Rather than trying to patch every single place
@@ -307,7 +330,7 @@ if(!state.recipeGroupBy) state.recipeGroupBy = 'base';
 if(!state.freezerBank) state.freezerBank = [];
 
 /* ============================================================
-   FIREBASE (live share)
+   FIREBASE (live share + cloud backup)
    ============================================================ */
 const firebaseConfig = {
   apiKey: "AIzaSyBWyu_dYoZ2x0NXw1JJ-DcEAD6fEHmxCzk",
@@ -317,11 +340,99 @@ const firebaseConfig = {
   messagingSenderId: "1094866173833",
   appId: "1:1094866173833:web:ac5618975734acd685ab58"
 };
-let firebaseDb = null;
 try{
   firebase.initializeApp(firebaseConfig);
   firebaseDb = firebase.firestore();
 }catch(e){ console.error('Firebase init failed', e); }
+try{
+  firebaseAuth = firebase.auth();
+}catch(e){ console.error('Firebase auth init failed', e); }
+
+/* ---- cloud backup: sign in with Google, and mirror state to Firestore under
+   the signed-in user's own uid so it survives this device losing its local
+   storage entirely, and can be picked up again on any other device. ---- */
+const cloudSessionId = uid()+uid(); // lets us tell "a change I just pushed up" apart from "a change that came from elsewhere"
+let cloudUnsub = null;
+function cloudDocRef(uidVal){ return firebaseDb.collection('users').doc(uidVal); }
+function signInWithGoogle(){
+  if(!firebaseAuth){ alert("Sign-in isn't available right now — check your connection and try again."); return; }
+  const provider = new firebase.auth.GoogleAuthProvider();
+  firebaseAuth.signInWithRedirect(provider);
+}
+function signOutOfGoogle(){
+  if(!firebaseAuth) return;
+  if(!confirm("Sign out? Your data stays backed up in the cloud, and this device keeps its own local copy too.")) return;
+  if(cloudUnsub){ cloudUnsub(); cloudUnsub = null; }
+  firebaseAuth.signOut();
+}
+function pushStateToCloud(uidVal){
+  if(!firebaseDb) return;
+  cloudDocRef(uidVal).set({ state, updatedAt: Date.now(), updatedBy: cloudSessionId }).catch(e=>console.error('Cloud backup failed', e));
+}
+function applyRemoteState(remoteState){
+  applyingRemoteState = true;
+  state = remoteState;
+  if(!state.freezerBank) state.freezerBank = [];
+  if(!state.recipeGroupBy) state.recipeGroupBy = 'base';
+  recomputeAllLastUsed();
+  saveState(); // local cache only — guarded from bouncing straight back to the cloud
+  render();
+  applyingRemoteState = false;
+}
+function startCloudListener(uidVal){
+  if(cloudUnsub || !firebaseDb) return;
+  cloudUnsub = cloudDocRef(uidVal).onSnapshot(doc=>{
+    if(!doc.exists) return;
+    const data = doc.data();
+    if(!data || !data.state || data.updatedBy===cloudSessionId) return; // our own echo — ignore
+    applyRemoteState(data.state);
+  }, e=>console.error('Cloud sync error', e));
+}
+function attachCloudSync(uidVal){
+  if(!firebaseDb) return;
+  cloudDocRef(uidVal).get().then(doc=>{
+    const cloudState = (doc.exists && doc.data()) ? doc.data().state : null;
+    const localHasContent = Object.keys(state.days||{}).length>0 || (state.recipes||[]).length>0;
+    const cloudHasContent = !!cloudState && (Object.keys(cloudState.days||{}).length>0 || (cloudState.recipes||[]).length>0);
+    if(localHasContent && cloudHasContent){
+      window.__pendingCloudUid = uidVal;
+      window.__pendingCloudState = cloudState;
+      showOverlay(`
+        <h2>Which data do you want to keep?</h2>
+        <p class="desc">This device has its own meal plan data, and your Google account already has a cloud backup too. Pick one — the other gets replaced.</p>
+        <div class="btnrow">
+          <button class="btn ghost" onclick="resolveCloudConflict('cloud')">Use my cloud backup</button>
+          <button class="btn primary" onclick="resolveCloudConflict('local')" style="flex:1;">Keep this device's data</button>
+        </div>
+      `);
+    } else if(cloudHasContent){
+      applyRemoteState(cloudState);
+      startCloudListener(uidVal);
+    } else {
+      pushStateToCloud(uidVal);
+      startCloudListener(uidVal);
+    }
+  }).catch(e=>console.error('Cloud fetch failed', e));
+}
+function resolveCloudConflict(choice){
+  const uidVal = window.__pendingCloudUid;
+  const cloudState = window.__pendingCloudState;
+  if(choice==='cloud' && cloudState){ applyRemoteState(cloudState); }
+  else { pushStateToCloud(uidVal); }
+  startCloudListener(uidVal);
+  closeOverlay();
+  window.__pendingCloudUid = null;
+  window.__pendingCloudState = null;
+}
+if(firebaseAuth){
+  firebaseAuth.getRedirectResult().catch(e=>console.error('Google sign-in failed', e));
+  firebaseAuth.onAuthStateChanged(user=>{
+    currentUser = user;
+    if(user){ attachCloudSync(user.uid); }
+    else if(cloudUnsub){ cloudUnsub(); cloudUnsub = null; }
+    render();
+  });
+}
 
 const SHARE_META_KEY = 'mealPlanShareMeta';
 function loadShareMeta(){
@@ -1955,6 +2066,7 @@ function renderSettings(){
       </div>
     </div>
     <div class="settings-wrap">
+      ${renderCloudSyncSection()}
       ${renderUntaggedSection()}
       ${renderMealBasesSection()}
       ${renderMealTypesSection()}
@@ -1965,9 +2077,30 @@ function renderSettings(){
         <button class="btn small" onclick="document.getElementById('fileimport').click()">Import backup</button>
       </div>
       <input type="file" id="fileimport" accept="application/json" onchange="importData(event)">
-      <p class="hint">Data is stored locally in this browser only.</p>
+      <p class="hint">${currentUser ? 'Backed up to your Google account, and cached locally in this browser.' : 'Data is stored locally in this browser only.'}</p>
     </div>
   `;
+}
+
+/* ---- cloud backup ---- */
+function renderCloudSyncSection(){
+  let body;
+  if(!firebaseAuth){
+    body = `<p class="hint">Cloud backup isn't available right now — check your connection and reload.</p>`;
+  } else if(currentUser){
+    body = `
+      <p class="section-desc">Signed in as <strong>${escapeHtml(currentUser.email||currentUser.displayName||'your Google account')}</strong>. Your data backs up here automatically, and will come back even if this browser loses everything.</p>
+      <button class="btn ghost small" onclick="signOutOfGoogle()">Sign out</button>`;
+  } else {
+    body = `
+      <p class="section-desc">Back your data up to your Google account — it'll survive your browser clearing its storage, and you'll be able to pick it up on any other device.</p>
+      <button class="btn primary small" onclick="signInWithGoogle()">Sign in with Google</button>`;
+  }
+  return `
+    <details class="cat-card"${openSections.has('cloudSync')?' open':''} ontoggle="trackSectionToggle('cloudSync',this.open)">
+      <summary><h3 class="section-title">Cloud backup</h3><span class="sec-count">${currentUser?'on':'off'}</span></summary>
+      <div class="cat-body">${body}</div>
+    </details>`;
 }
 
 /* ---- freezer bank ---- */
