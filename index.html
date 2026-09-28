@@ -357,7 +357,10 @@ function cloudDocRef(uidVal){ return firebaseDb.collection('users').doc(uidVal);
 function signInWithGoogle(){
   if(!firebaseAuth){ alert("Sign-in isn't available right now — check your connection and try again."); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebaseAuth.signInWithRedirect(provider);
+  firebaseAuth.signInWithRedirect(provider).catch(e=>{
+    console.error('Google sign-in failed', e);
+    alert("Couldn't start Google sign-in: "+((e&&e.message)||'unknown error')+"\n\nThis usually means Google sign-in isn't enabled yet in the Firebase console (Authentication → Sign-in method), or this site isn't listed under Authentication → Settings → Authorized domains.");
+  });
 }
 function signOutOfGoogle(){
   if(!firebaseAuth) return;
@@ -425,7 +428,10 @@ function resolveCloudConflict(choice){
   window.__pendingCloudState = null;
 }
 if(firebaseAuth){
-  firebaseAuth.getRedirectResult().catch(e=>console.error('Google sign-in failed', e));
+  firebaseAuth.getRedirectResult().catch(e=>{
+    console.error('Google sign-in failed', e);
+    alert("Google sign-in didn't complete: "+((e&&e.message)||'unknown error'));
+  });
   firebaseAuth.onAuthStateChanged(user=>{
     currentUser = user;
     if(user){ attachCloudSync(user.uid); }
