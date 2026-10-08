@@ -528,8 +528,8 @@ function undoLastAction(){
   render();
   toast('Undone');
 }
-function toastWithUndo(msg){
-  toast(msg, {actionLabel:'Undo', onAction:undoLastAction});
+function toastWithUndo(msg, duration){
+  toast(msg, {actionLabel:'Undo', onAction:undoLastAction, duration});
 }
 
 /* ============================================================
@@ -570,6 +570,18 @@ function addFreezerBankItem(name){
   state.freezerBank.push(item);
   saveState();
   return item;
+}
+// a meal that was pulled out of the freezer bank goes back into it if it's cleared,
+// replaced or discarded — callers pass the slot objects that are about to be lost
+function freezerNamesIn(slots){
+  return slots.filter(s=>s && s.status==='planned' && s.fromFreezer && s.recipeName).map(s=>s.recipeName);
+}
+function returnToFreezer(names){
+  names.forEach(n=>state.freezerBank.push({id:uid(), name:n}));
+}
+function freezerReturnNote(names){
+  if(!names.length) return '';
+  return `${names.length} freezer meal${names.length===1?'':'s'} back in the freezer: ${names.join(', ')}`;
 }
 function removeFreezerBankItem(id){
   captureUndo();
@@ -813,7 +825,8 @@ function openClearWeekConfirm(){
   const label = `${fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} – ${fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`;
   showOverlay(`
     <h2>Clear this week?</h2>
-    <p class="desc">This clears every lunch and dinner for ${label}. It can't be undone.</p>
+    <p class="desc">This clears every lunch and dinner for ${label}. You can undo it straight afterwards.</p>
+    ${(()=>{ const slots=[]; days.forEach(d=>{ const x=state.days[d]; if(x) slots.push(x.lunch,x.dinner); }); const f=freezerNamesIn(slots); return f.length ? `<p class="desc"><strong>${escapeHtml(freezerReturnNote(f).replace('back in the freezer','will go back in the freezer'))}</strong></p>` : ''; })()}
     <div class="btnrow">
       <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
       <button class="btn danger" onclick="clearCurrentWeek()" style="flex:1;">Clear week</button>
@@ -822,13 +835,17 @@ function openClearWeekConfirm(){
 }
 function clearCurrentWeek(){
   captureUndo();
+  const lost = [];
+  weekDates(viewWeekStart).forEach(date=>{ const d = state.days[date]; if(d) lost.push(d.lunch, d.dinner); });
+  const freezerNames = freezerNamesIn(lost);
+  returnToFreezer(freezerNames);
   weekDates(viewWeekStart).forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
   recomputeAllLastUsed();
   saveState();
   refreshLiveShare();
   closeOverlay();
   render();
-  toastWithUndo('Week cleared');
+  toastWithUndo(freezerNames.length ? `Week cleared — ${freezerReturnNote(freezerNames)}` : 'Week cleared', freezerNames.length ? 7000 : undefined);
 }
 
 /* ============================================================
@@ -957,6 +974,8 @@ function assignSlot(date, meal, recipeId, forceStatus){
   captureUndo();
   const day = ensureDay(date);
   const had = day[meal];
+  const backToFreezer = freezerNamesIn([had]);
+  returnToFreezer(backToFreezer);
   if(forceStatus==='out'){ day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null}; }
   else if(forceStatus==='empty'){ day[meal] = emptySlot(); }
   else {
@@ -971,8 +990,10 @@ function assignSlot(date, meal, recipeId, forceStatus){
   refreshLiveShare();
   closeOverlay();
   render();
-  if(forceStatus==='out') toastWithUndo('Marked as out');
-  else if(forceStatus==='empty' && had.status!=='empty') toastWithUndo('Cleared');
+  const fnote = backToFreezer.length ? ` — ${freezerReturnNote(backToFreezer)}` : '';
+  if(forceStatus==='out') toastWithUndo('Marked as out'+fnote, fnote?7000:undefined);
+  else if(forceStatus==='empty' && had.status!=='empty') toastWithUndo('Cleared'+fnote, fnote?7000:undefined);
+  else if(fnote) toastWithUndo('Replaced'+fnote, 7000);
 }
 function assignFreeText(date, meal){
   const input = document.getElementById('freeTextInput');
@@ -980,12 +1001,15 @@ function assignFreeText(date, meal){
   if(!text){ input.focus(); return; }
   captureUndo();
   const day = ensureDay(date);
+  const backToFreezer = freezerNamesIn([day[meal]]);
+  returnToFreezer(backToFreezer);
   day[meal] = {status:'planned', recipeId:null, recipeName:text, baseLabel:null};
   recomputeAllLastUsed(); // in case a real recipe was sitting in this slot before
   saveState();
   refreshLiveShare();
   closeOverlay();
   render();
+  if(backToFreezer.length) toastWithUndo('Replaced — '+freezerReturnNote(backToFreezer), 7000);
 }
 
 /* ---- swap: swipe a planned meal right to swing in a different eligible recipe ---- */
@@ -1105,6 +1129,8 @@ function doMove(targetDate, targetMeal, swap){
   const dstDay = ensureDay(targetDate);
   const srcSlot = srcDay[moveSource.meal];
   const dstSlot = dstDay[targetMeal];
+  const backToFreezer = swap ? [] : freezerNamesIn([dstSlot]); // "replace it" discards the old one
+  returnToFreezer(backToFreezer);
   if(swap){
     dstDay[targetMeal] = srcSlot;
     srcDay[moveSource.meal] = dstSlot;
@@ -1120,7 +1146,7 @@ function doMove(targetDate, targetMeal, swap){
   refreshLiveShare();
   closeOverlay();
   render();
-  toastWithUndo(swap ? 'Swapped' : 'Moved');
+  toastWithUndo((swap ? 'Swapped' : 'Moved')+(backToFreezer.length ? ' — '+freezerReturnNote(backToFreezer) : ''), backToFreezer.length?7000:undefined);
 }
 
 /* ============================================================
@@ -1437,7 +1463,12 @@ function proceedGeneratePlan(overwriteAll){
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
 
+  let replacedFreezerNames = [];
   if(overwriteAll){
+    const lostSlots = [];
+    days.forEach(date=>{ const d = state.days[date]; if(d) lostSlots.push(d.lunch, d.dinner); });
+    replacedFreezerNames = freezerNamesIn(lostSlots);
+    returnToFreezer(replacedFreezerNames);
     days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
   } else {
     days.forEach(date=>{ if(!state.days[date]) state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
@@ -1486,18 +1517,27 @@ function proceedGeneratePlan(overwriteAll){
 
   const usedIds = new Set(priorityPool.map(r=>r.id));
   const priorityCount = Math.min(priorityPool.length, slotOrder.length);
+  // spread priority items across different days (one per day while days last) instead of
+  // dropping them into the first consecutive slots, which put two on the same day
+  const slotsLeft = slotOrder.slice();
+  const priorityDates = new Set();
   for(let i=0;i<priorityCount;i++){
     const r = priorityPool[i];
-    const slot = slotOrder[i];
+    let idx = slotsLeft.findIndex(s=>!priorityDates.has(s.date));
+    if(idx===-1) idx = 0;
+    const slot = slotsLeft.splice(idx,1)[0];
+    priorityDates.add(slot.date);
     const day = state.days[slot.date];
     day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
+    if(freezerBankIdByRecipeId[r.id]) day[slot.meal].fromFreezer = true; // remembers it came out of the freezer bank
     r.lastUsedWeekStart = slot.date;
     if(freezerBankIdByRecipeId[r.id]){
       state.freezerBank = state.freezerBank.filter(f=>f.id!==freezerBankIdByRecipeId[r.id]);
     }
   }
-  priorityPool.slice(0,priorityCount).forEach(r=>removeIfEphemeral(r));
-  const remainingSlots = slotOrder.slice(priorityCount);
+  const priorityPlaced = priorityPool.slice(0,priorityCount);
+  priorityPlaced.forEach(r=>removeIfEphemeral(r));
+  const remainingSlots = slotsLeft;
 
   if(remainingSlots.length){
     const fancy = wizard.fancyBaseIds || [];
@@ -1548,6 +1588,12 @@ function proceedGeneratePlan(overwriteAll){
     const usedThisRun = new Set();
     const baseUsedCount = {};
     const typeUsedCount = {};
+    // items already placed up front (freezer / new-to-try) still count toward caps and variety
+    priorityPlaced.forEach(r=>{
+      usedThisRun.add(r.id);
+      (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
+      (r.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1);
+    });
 
     // for "include regularly" bases, find how long it's actually been since each one
     // last appeared anywhere in the plan, so a long-absent base can get a boost
@@ -1576,6 +1622,36 @@ function proceedGeneratePlan(overwriteAll){
       return Math.max(1, Math.round(n * scaleFactor));
     }
 
+    // an "up to N" meal base is a firm cap, not a nudge: once N recipes from it are in
+    // this plan, nothing else from that base goes in (relaxed only as a last resort)
+    function capReached(r){
+      return (r.baseIds||[]).some(id=>{
+        const b = getMealBase(id);
+        if(!b || b.ruleType==='min' || b.ruleType==='regular') return false;
+        if(fancy.includes(id)) return false; // asked for "more of this" in the wizard — overrides the cap
+        const cap = scaledTarget(b.weeklyTarget);
+        return cap>0 && (baseUsedCount[id]||0) >= cap;
+      });
+    }
+    function capRoom(r){ // how many more copies of r fit before an "up to" cap is hit
+      let room = Infinity;
+      (r.baseIds||[]).forEach(id=>{
+        const b = getMealBase(id);
+        if(!b || b.ruleType==='min' || b.ruleType==='regular' || fancy.includes(id)) return;
+        const cap = scaledTarget(b.weeklyTarget);
+        if(cap>0) room = Math.min(room, cap-(baseUsedCount[id]||0));
+      });
+      return room;
+    }
+    // "very busy" (or busier) is a firm preference: stick to meals tagged for busy days or
+    // from the bases picked in "what are you fancying", only dipping into anything else
+    // when those genuinely run out
+    const veryBusy = (wizard.busyLevel||1) >= 2;
+    function isBusyPreferred(r){
+      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.busyDay; })
+        || (r.baseIds||[]).some(id=>fancy.includes(id));
+    }
+
     function weightFor(r, refDate, isBusySlot){
       let w = 1;
       (r.typeIds||[]).forEach(id=>{
@@ -1595,6 +1671,9 @@ function proceedGeneratePlan(overwriteAll){
       (r.baseIds||[]).forEach(id=>{
         const b = getMealBase(id);
         if(!b) return;
+        // a base picked in "what are you fancying" gets no tapering, caps or per-use decay —
+        // the explicit ask for more of it wins over the usual limits for this plan
+        if(fancy.includes(id)) return;
         const usedCount = baseUsedCount[id]||0;
         if(b.ruleType==='min' && !skipMinIds.includes(id)){
           // the hard reservation pass above already tries to guarantee this target outright;
@@ -1625,7 +1704,8 @@ function proceedGeneratePlan(overwriteAll){
         const freq = r.frequencyWeeks || 1;
         if(weeksBetween(r.lastUsedWeekStart, refDate) < freq) w *= 0.12;
       }
-      if(fancy.length) w *= (r.baseIds||[]).some(id=>fancy.includes(id)) ? 2.5 : 0.6;
+      // picked bases get a real lead; on a very busy stretch the lead is stronger still
+      if(fancy.length) w *= (r.baseIds||[]).some(id=>fancy.includes(id)) ? (veryBusy ? 4 : 2.5) : 0.6;
       return w;
     }
     function weightedPick(pool, refDate, isBusySlot, preferFn){
@@ -1664,9 +1744,10 @@ function proceedGeneratePlan(overwriteAll){
         let placedThis = false;
         for(const slot of openSlots){
           const candidates = eligibleRecipes.filter(r=>
+            (!veryBusy || isBusyPreferred(r) || !eligibleRecipes.some(isBusyPreferred)) &&
             seasonOkAt(r, slot.date) && freqOkAt(r, slot.date) &&
             !hasBaseConflictOnDay(r, slot.date) && !sameRecipeAlreadyOnDay(r, slot.date) &&
-            !usedThisRun.has(r.id)
+            !usedThisRun.has(r.id) && !capReached(r)
           );
           if(candidates.length){
             const picked = weightedPick(candidates, slot.date, false, null);
@@ -1687,17 +1768,25 @@ function proceedGeneratePlan(overwriteAll){
 
     // multiply-flagged recipes get a chance to feature 2-3x, spaced across different
     // days (never twice the same day, every copy within 2 days of its first appearance)
-    shuffle(basePoolAll.filter(r=>r.multiply)).forEach(r=>{
-      if(!openSlots.length || usedThisRun.has(r.id)) return;
+    // multiply is a garnish, not the whole plan: it may use at most ~a quarter of what's
+    // left, so the weighted fill (and any picked "fancying" bases) still gets real say.
+    // When bases are picked, only recipes from those bases get multiplied.
+    let multiplyBudget = Math.max(2, Math.floor(openSlots.length/4));
+    const multiplyPool = basePoolAll.filter(r=>r.multiply && (!veryBusy || isBusyPreferred(r)) &&
+      (!fancy.length || (r.baseIds||[]).some(id=>fancy.includes(id))));
+    shuffle(multiplyPool).forEach(r=>{
+      if(multiplyBudget<=0 || !openSlots.length || usedThisRun.has(r.id)) return;
+      if(capRoom(r) < 1) return;
       if(Math.random() < 0.35) return; // don't force every multiply recipe in every single run
       // a multiply recipe must still respect its own season and frequency window —
       // if it's not eligible to start anywhere in this run, skip it entirely
       const eligibleStartSlots = openSlots.filter(s=>seasonOkAt(r,s.date) && freqOkAt(r,s.date));
       if(!eligibleStartSlots.length) return;
-      const copies = Math.random()<0.5?2:3;
+      const copies = Math.min(Math.random()<0.5?2:3, capRoom(r), multiplyBudget);
+      // never at the cost of the same-day shared-base rule — if there's no clean slot, skip it
       let startSlot = eligibleStartSlots.find(s=>s.date!==wizard.busyDate && !hasBaseConflictOnDay(r,s.date));
-      if(!startSlot) startSlot = eligibleStartSlots.find(s=>s.date!==wizard.busyDate);
-      if(!startSlot) startSlot = eligibleStartSlots[0];
+      if(!startSlot) startSlot = eligibleStartSlots.find(s=>!hasBaseConflictOnDay(r,s.date));
+      if(!startSlot) return;
       const startIdx = openSlots.indexOf(startSlot);
       openSlots.splice(startIdx,1);
       const startDate = startSlot.date;
@@ -1707,14 +1796,14 @@ function proceedGeneratePlan(overwriteAll){
       for(let k=1;k<copies;k++){
         // once placed, later copies only need to still be in-season/in-window at their
         // own date and within the 2-day spread of the first appearance
-        let idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date) && !hasBaseConflictOnDay(r,s.date));
-        if(idx===-1) idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date));
+        const idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date) && !hasBaseConflictOnDay(r,s.date));
         if(idx===-1) break;
         const [s] = openSlots.splice(idx,1);
         placements.push(s);
         usedDates.add(s.date);
       }
       placements.forEach(slot=>{ place(slot, r); });
+      multiplyBudget -= placements.length;
     });
 
     // fill everything else — one weighted pick per remaining slot. Season and frequency
@@ -1725,12 +1814,13 @@ function proceedGeneratePlan(overwriteAll){
     // all. Only once every reuse/conflict combination has been tried and failed does the
     // search move on to relaxing season or frequency too. Whatever ends up broken to fill
     // the slot is recorded so it can be explained afterwards.
-    function poolForFlags(pool, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse){
+    function poolForFlags(pool, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse, relaxCap){
       return pool.filter(r=>
         (relaxSeason || seasonOkAt(r, slot.date)) &&
         (relaxFreq || freqOkAt(r, slot.date)) &&
         (relaxConflict || !hasBaseConflictOnDay(r, slot.date)) &&
-        (relaxReuse || !usedThisRun.has(r.id))
+        (relaxReuse || !usedThisRun.has(r.id)) &&
+        (relaxCap || !capReached(r))
       );
     }
     openSlots.forEach(slot=>{
@@ -1738,23 +1828,34 @@ function proceedGeneratePlan(overwriteAll){
       // only if literally nothing else in the whole library is left to try
       const dayPool = basePoolAll.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
       const searchPool = dayPool.length ? dayPool : basePoolAll;
+      // on a very busy stretch, each tier first tries the busy-friendly meals, then
+      // everything else, before moving on to relax anything further
+      // very busy: only busy-friendly meals (busy-day types or picked bases) are ever
+      // considered — slower meals are skipped entirely unless nothing busy-friendly exists
+      const busyOnly = veryBusy ? searchPool.filter(isBusyPreferred) : [];
+      const scopes = veryBusy ? (busyOnly.length ? [busyOnly] : [searchPool]) : [searchPool];
       let pool = [];
-      outer:
-      for(let outerCount=0; outerCount<=2; outerCount++){
-        for(let innerCount=0; innerCount<=2; innerCount++){
-          const seen = new Set();
-          for(let om=0; om<4; om++){
-            if(((om&1?1:0)+(om&2?1:0))!==outerCount) continue;
-            const relaxSeason = !!(om&1), relaxFreq = !!(om&2);
-            for(let im=0; im<4; im++){
-              if(((im&1?1:0)+(im&2?1:0))!==innerCount) continue;
-              const relaxConflict = !!(im&1), relaxReuse = !!(im&2);
-              poolForFlags(searchPool, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse).forEach(r=>{
-                if(!seen.has(r.id)){ seen.add(r.id); pool.push(r); }
-              });
+      search:
+      for(const relaxCap of [false, true]){
+        for(let outerCount=0; outerCount<=2; outerCount++){
+          for(let innerCount=0; innerCount<=2; innerCount++){
+            for(const scope of scopes){
+              const seen = new Set();
+              const tierPool = [];
+              for(let om=0; om<4; om++){
+                if(((om&1?1:0)+(om&2?1:0))!==outerCount) continue;
+                const relaxSeason = !!(om&1), relaxFreq = !!(om&2);
+                for(let im=0; im<4; im++){
+                  if(((im&1?1:0)+(im&2?1:0))!==innerCount) continue;
+                  const relaxConflict = !!(im&1), relaxReuse = !!(im&2);
+                  poolForFlags(scope, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse, relaxCap).forEach(r=>{
+                    if(!seen.has(r.id)){ seen.add(r.id); tierPool.push(r); }
+                  });
+                }
+              }
+              if(tierPool.length){ pool = tierPool; break search; }
             }
           }
-          if(pool.length) break outer;
         }
       }
       if(!pool.length) return;
@@ -1768,8 +1869,11 @@ function proceedGeneratePlan(overwriteAll){
         if(!seasonOkAt(picked, slot.date)) violated.push('season');
         if(!freqOkAt(picked, slot.date)) violated.push('frequency');
         if(hasBaseConflictOnDay(picked, slot.date)) violated.push('sameday');
+        if(capReached(picked)) violated.push('cap');
+        if(veryBusy && !isBusyPreferred(picked)) violated.push('busy');
+        const busyTypeIds = state.mealTypes.filter(t=>t.busyDay).map(t=>t.id);
         place(slot, picked);
-        if(violated.length) overrides.push({date:slot.date, meal:slot.meal, recipeId:picked.id, recipeName:picked.name, baseIds:(picked.baseIds||[]).slice(), typeIds:(picked.typeIds||[]).slice(), violated});
+        if(violated.length) overrides.push({date:slot.date, meal:slot.meal, recipeId:picked.id, recipeName:picked.name, baseIds:(picked.baseIds||[]).slice(), typeIds:(picked.typeIds||[]).slice(), violated, suggestTypeIds: violated.includes('busy') && violated.length===1 ? busyTypeIds : null});
       }
     });
   }
@@ -1785,7 +1889,8 @@ function proceedGeneratePlan(overwriteAll){
   render();
 
   const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
-  toast(filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — your recipe library may be empty for some tags` : 'Plan complete');
+  toast((filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — your recipe library may be empty for some tags` : 'Plan complete')
+    + (replacedFreezerNames.length ? ` — ${freezerReturnNote(replacedFreezerNames)}` : ''));
   if(overrides.length || shortfalls.length) showOverridesPopup(overrides, shortfalls);
 }
 
@@ -1797,6 +1902,8 @@ function overrideReasonParts(o){
     if(v==='season') return `${baseLabel||'its meal base'} is marked out of season right now`;
     if(v==='frequency') return `its repeat rule wants a longer gap since it was last used`;
     if(v==='sameday') return `something with a similar base or ingredient was already planned that day`;
+    if(v==='cap') return `its meal base already hit its "up to" limit for this plan`;
+    if(v==='busy') return `this was marked a very busy stretch and it isn't one of your busy-day or picked meals`;
     return v;
   });
 }
@@ -1806,10 +1913,10 @@ function showOverridesPopup(overrides, shortfalls){
   const overrideRows = overrides.map(o=>{
     const baseLabel = (o.baseIds||[]).map(id=>{ const b=getMealBase(id); return b?b.name:null; }).filter(Boolean).join('/');
     const reasonParts = overrideReasonParts(o);
-    const preselect = JSON.stringify({baseIds:o.baseIds, typeIds:o.typeIds});
+    const preselect = JSON.stringify(o.suggestTypeIds ? {baseIds:[], typeIds:o.suggestTypeIds} : {baseIds:o.baseIds, typeIds:o.typeIds});
     return `<div class="override-row" style="margin-bottom:10px;">
       <p class="desc" style="margin:0 0 6px;"><strong>${escapeHtml(dayShort(o.date))} ${o.meal}:</strong> put in "${escapeHtml(o.recipeName)}" even though ${reasonParts.map(escapeHtml).join(' and ')} — there weren't enough other eligible recipes at that point.</p>
-      <button type="button" class="btn ghost small" onclick='openRecipeEditorPreselect(${preselect})'>+ Add a recipe for ${escapeHtml(baseLabel||'this')}</button>
+      <button type="button" class="btn ghost small" onclick='openRecipeEditorPreselect(${preselect})'>+ Add a recipe for ${o.suggestTypeIds ? 'busy days' : escapeHtml(baseLabel||'this')}</button>
     </div>`;
   }).join('');
   const shortfallRows = shortfalls.map(s=>{
