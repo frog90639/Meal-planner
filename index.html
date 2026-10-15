@@ -7,6 +7,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#FFF3E1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1B1712" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" content="Meal Plan">
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -20,7 +25,13 @@
     --paper-2:#FFF3DE;
     --paper-line:#F0DEBE;
     --ink:#33291C;
-    --ink-soft:#8C7C63;
+    --ink-soft:#6E5F48;
+    --surface:#FFFFFF;
+    --field:#FFFFFF;
+    --glow:#FFEACB;
+    --notice:#FFF6DC;
+    --notice-line:#F0D58A;
+    --switch-off:#C9C3B6;
     --mustard:#FFB238;
     --mustard-ink:#5C3A00;
     --brick:#FF6B4A;
@@ -37,7 +48,7 @@
   body{
     margin:0;
     background:
-      radial-gradient(1200px 600px at 50% -10%, #FFEACB 0%, var(--bg) 55%);
+      radial-gradient(1200px 600px at 50% -10%, var(--glow) 0%, var(--bg) 55%);
     color:var(--ink);
     font-family:var(--font-body);
     -webkit-font-smoothing:antialiased;
@@ -118,11 +129,11 @@
   .field label{display:block;font-size:12.5px;color:var(--ink-soft);margin-bottom:6px;letter-spacing:.01em;}
   .field input[type=date],.field input[type=text],.field input[type=number],.field textarea,.field select{
     width:100%;padding:11px 12px;border-radius:8px;border:1.5px solid var(--paper-line);
-    background:#fff;font-size:15px;color:var(--ink);font-family:var(--font-body);
+    background:var(--surface);font-size:15px;color:var(--ink);font-family:var(--font-body);
   }
   .field textarea{resize:vertical;line-height:1.4;}
   .checklist{border:1px solid var(--paper-line);border-radius:10px;overflow:hidden;}
-  .checklist .crow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);font-size:14px;background:#fff;}
+  .checklist .crow{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--paper-line);font-size:14px;background:var(--surface);}
   .checklist .crow:last-child{border-bottom:none;}
   .checklist .crow .cname{flex:1;color:var(--ink);}
   .checklist .crow .cname small{display:block;color:var(--ink-soft);font-size:11.5px;}
@@ -137,7 +148,7 @@
 
   /* chips (meal base / meal type multi-select) */
   .chip-group{display:flex;flex-wrap:wrap;gap:6px;}
-  .chip{padding:7px 13px;border-radius:16px;border:1.5px solid var(--paper-line);background:#fff;font-size:12.5px;color:var(--ink-soft);}
+  .chip{padding:7px 13px;border-radius:16px;border:1.5px solid var(--paper-line);background:var(--surface);font-size:12.5px;color:var(--ink-soft);}
   .chip.active{background:var(--brick);border-color:var(--brick);color:#fff;}
   .chip.type-chip.active{background:var(--sage-dark);border-color:var(--sage-dark);color:#fff;}
   .chip.season-chip{text-transform:capitalize;font-size:11px;padding:5px 10px;}
@@ -148,7 +159,7 @@
   /* recipe picker (slot editor) */
   .picker-cat{margin-bottom:10px;}
   .picker-cat h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-dark);}
-  details.picker-cat{border:1px solid var(--paper-line);border-radius:10px;background:#fff;overflow:hidden;}
+  details.picker-cat{border:1px solid var(--paper-line);border-radius:10px;background:var(--surface);overflow:hidden;}
   details.picker-cat summary{list-style:none;cursor:pointer;padding:11px 12px;font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--sage-dark);display:flex;justify-content:space-between;align-items:center;}
   details.picker-cat summary::-webkit-details-marker{display:none;}
   details.picker-cat summary::after{content:'▸';font-size:11px;color:var(--ink-soft);transition:transform .15s;margin-left:auto;padding-left:8px;}
@@ -157,7 +168,7 @@
   details.picker-cat summary .count{font-size:11px;color:var(--ink-soft);text-transform:none;letter-spacing:0;margin-left:8px;}
   details.picker-cat .opts{padding:0 12px 12px;}
   details.picker-cat .opts .picker-opt:last-child{margin-bottom:0;}
-  .picker-opt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--paper-line);border-radius:8px;background:#fff;margin-bottom:6px;font-size:14px;}
+  .picker-opt{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--paper-line);border-radius:8px;background:var(--surface);margin-bottom:6px;font-size:14px;}
   .picker-opt .meta{color:var(--ink-soft);font-size:11.5px;}
   .picker-opt:active{background:var(--paper-2);}
 
@@ -168,8 +179,8 @@
   details.cat-card summary::-webkit-details-marker{display:none;}
   details.cat-card summary .section-title{margin:0;flex:1;}
   details.cat-card summary .sec-count{font-size:11.5px;color:var(--ink-soft);font-family:var(--font-body);font-weight:400;}
-  details.cat-card summary::after{content:'▸';font-size:13px;color:var(--ink-soft);transition:transform .15s;flex:none;}
-  details.cat-card[open] summary::after{transform:rotate(90deg);}
+  details.cat-card > summary::after{content:'▸';font-size:13px;color:var(--ink-soft);transition:transform .15s;flex:none;}
+  details.cat-card[open] > summary::after{transform:rotate(90deg);}
   details.cat-card .cat-body{margin-top:10px;}
   .section-title{font-family:var(--font-display);font-size:16px;margin:0 0 4px;color:var(--ink);}
   .section-desc{font-size:12px;color:var(--ink-soft);margin:0 0 10px;line-height:1.4;}
@@ -177,14 +188,14 @@
   .rule-row:first-child{border-top:none;}
   .rule-row input[type=text]{flex:1 1 100%;font-family:var(--font-display);font-weight:700;font-size:15px;border:none;background:transparent;color:var(--ink);padding:2px 0;}
   .target-stepper{display:flex;align-items:center;gap:6px;flex:none;}
-  .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:#fff;color:var(--ink);font-size:15px;line-height:1;}
+  .target-stepper button{width:26px;height:26px;border-radius:6px;border:1px solid var(--paper-line);background:var(--surface);color:var(--ink);font-size:15px;line-height:1;}
   .target-stepper .tval{width:52px;text-align:center;font-size:12px;color:var(--ink-soft);}
-  .rule-row select{flex:none;border:1px solid var(--paper-line);border-radius:6px;font-size:11px;padding:5px;background:#fff;color:var(--ink);}
+  .rule-row select{flex:none;border:1px solid var(--paper-line);border-radius:6px;font-size:11px;padding:5px;background:var(--surface);color:var(--ink);}
   .busy-toggle{flex:1 1 100%;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
   .busy-toggle input{width:15px;height:15px;accent-color:var(--brick);}
   .del-x{background:none;border:none;color:var(--ink-soft);font-size:16px;padding:0 2px;flex:none;}
   .add-cat-form{display:flex;gap:8px;margin-top:10px;}
-  .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:#fff;color:var(--ink);font-size:14px;}
+  .add-cat-form input{flex:1;padding:11px 12px;border-radius:9px;border:1.5px dashed var(--paper-line);background:var(--surface);color:var(--ink);font-size:14px;}
   .add-cat-form input::placeholder{color:var(--ink-soft);}
   .add-cat-form button{background:var(--mustard);color:var(--mustard-ink);border:none;border-radius:9px;padding:0 18px;font-weight:700;}
   .recipe-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 0;border-top:1px dashed var(--paper-line);}
@@ -200,11 +211,127 @@
   .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
   .toast.with-action{pointer-events:auto;}
   .toast-undo{background:none;border:none;color:var(--brick-dark);font-weight:700;font-size:13.5px;padding:2px 0;cursor:pointer;flex-shrink:0;}
+  .rule-group{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:14px 0 2px;}
+  .wrule{padding:8px 0;border-top:1px dashed var(--paper-line);}
+  .wrule-top{display:flex;align-items:center;gap:8px;}
+  .wrule-name{flex:1;font-size:13.5px;}
+  .tipbtn{background:none;border:none;color:var(--ink-soft);font-size:15px;padding:2px 4px;cursor:pointer;}
+  .wrule-tip{display:none;font-size:11.5px;color:var(--ink-soft);line-height:1.45;padding:4px 0 0;}
+  .wrule-tip.show{display:block;}
+  .wrule select{border:1px solid var(--paper-line);border-radius:6px;font-size:12px;padding:5px;background:var(--surface);color:var(--ink);}
+  .switch{position:relative;display:inline-block;width:40px;height:22px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .slider{position:absolute;inset:0;background:var(--switch-off);border-radius:22px;transition:.2s;cursor:pointer;}
+  .slider:before{content:"";position:absolute;height:16px;width:16px;left:3px;top:3px;background:#FFFDF8;border-radius:50%;transition:.2s;}
+  .switch input:checked + .slider{background:var(--brick);}
+  .switch input:checked + .slider:before{transform:translateX(18px);}
+  #app{padding-bottom:86px;}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-around;background:var(--paper);border-top:1px solid var(--paper-line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));z-index:40;box-shadow:0 -4px 16px rgba(0,0,0,.05);}
+  .tab{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;color:var(--ink-soft);padding:4px 0;cursor:pointer;font-family:inherit;}
+  .tab-ic{line-height:1;opacity:.6;display:flex;}
+  .tab.active{color:var(--brick-dark);font-weight:700;}
+  .tab.active .tab-ic{opacity:1;}
+  .toast{bottom:84px !important;padding:8px 14px;font-size:13px;border-radius:14px;max-width:min(92vw,420px);box-shadow:0 4px 18px rgba(0,0,0,.14);}
+  .toast .toast-msg{flex:1;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .toast-undo{font-size:13px !important;white-space:nowrap;}
+  .notice-card{background:var(--surface);border-radius:14px;padding:14px 16px;margin:0 0 14px;box-shadow:var(--shadow);border-left:4px solid var(--mustard, #e0b04a);}
+  .notice-card h3{margin:0 0 4px;font-size:15px;}
+  .notice-card p{margin:0 0 10px;font-size:13px;color:var(--ink-soft);line-height:1.45;}
+  .current-meal{background:var(--paper);border-radius:12px;padding:12px 14px;margin-bottom:12px;}
+  .current-meal .cm-name{font-weight:700;font-size:16px;}
+  .current-meal .cm-label{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .action-grid .btn{width:100%;}
+  .weekmenu-btn{background:none;border:none;font-size:20px;color:var(--ink-soft);cursor:pointer;padding:0 6px;}
+  .dialog-layer{z-index:80;align-items:center;}
+  .modal.dialog{max-width:360px;border-radius:18px;margin:0 16px;}
+  .freezer-chip{display:inline-flex;align-items:center;gap:6px;min-height:40px;background:var(--paper);border:1.5px solid var(--paper-line);border-radius:20px;padding:8px 12px;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer;font-family:inherit;}
+  .cloud-ok{color:var(--sage-dark);vertical-align:middle;display:inline-flex;margin-left:4px;}
+  .backup-banner{display:flex;align-items:center;gap:8px;background:var(--notice);border:1px solid var(--notice-line);border-radius:12px;padding:8px 10px;margin:0 0 12px;font-size:12.5px;color:var(--ink);}
+  .backup-banner span{flex:1;line-height:1.35;}
+  .past-fold{display:block;width:100%;text-align:left;background:none;border:1.5px dashed var(--paper-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:13.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
+  .past-fold span{font-weight:400;}
+  .daycard.past{opacity:.55;}
+  .move-grid{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1fr);gap:6px 8px;align-items:center;margin-bottom:12px;}
+  .move-grid .mday{font-size:13px;font-weight:700;}
+  .move-cell{min-width:0;overflow:hidden;border:1.5px solid var(--paper-line);background:var(--surface);border-radius:10px;padding:7px 8px;text-align:left;font-size:12px;cursor:pointer;font-family:inherit;color:var(--ink);min-height:40px;}
+  .move-cell small{display:block;color:var(--ink-soft);font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .move-cell.current{border-color:var(--brick);background:var(--paper);cursor:default;}
+  .link-danger{background:none;border:none;color:var(--brick-dark);text-decoration:underline;font-size:13px;cursor:pointer;padding:12px 0 0;font-family:inherit;display:block;margin:0 auto;}
+  .wiz-q{font-size:15px;margin:14px 0 8px;font-family:inherit;}
+  .linkbtn{background:none;border:none;color:var(--brick-dark);text-decoration:underline;padding:0;font-size:inherit;cursor:pointer;font-family:inherit;}
+  .recipe-search{width:100%;padding:11px 14px;border-radius:12px;border:1.5px solid var(--paper-line);font-size:15px;margin:0 0 14px;background:var(--surface);box-sizing:border-box;}
+  .cfg-row{border-top:1px dashed var(--paper-line);padding:4px 0;}
+  .cfg-row:first-of-type{border-top:none;}
+  .cfg-row > summary{list-style:none;display:flex;align-items:center;gap:8px;padding:10px 0;cursor:pointer;}
+  .cfg-row > summary::-webkit-details-marker{display:none;}
+  .cfg-row .cfg-name{font-weight:700;font-size:15px;}
+  .cfg-row .cfg-sum{flex:1;font-size:12px;color:var(--ink-soft);text-align:right;}
+  .cfg-row .cfg-chev{color:var(--ink-soft);font-size:12px;}
+  .cfg-row > summary::after{content:'▸';font-size:12px;color:var(--ink-soft);transition:transform .15s;}
+  .cfg-row[open] > summary::after{transform:rotate(90deg);}
+  .cfg-body{padding:2px 0 12px;}
+  .cfg-body .rule-row{border-top:none;padding-top:0;}
+
+  /* ---- dark mode: follows the phone ---- */
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#17130F; --bg-elevated:#251F18; --board-line:#3A3026;
+      --paper:#211B15; --paper-2:#2B241C; --paper-line:#3D3328;
+      --ink:#F4EADB; --ink-soft:#BBA98E;
+      --surface:#2A231B; --field:#2A231B; --glow:#241C14;
+      --notice:#2E2616; --notice-line:#5A4A22; --switch-off:#4A4036;
+      --brick:#FF6B4A; --brick-dark:#FF8A6D; --sage:#38C4B0; --sage-dark:#4FCDB9;
+      --mustard:#E9A236; --mustard-ink:#2A1A00;
+      --shadow:0 6px 18px rgba(0,0,0,.45);
+    }
+    .overlay{background:rgba(0,0,0,.7);}
+    .slot.out{background:rgba(79,205,185,.12);}
+    .daycard .dayhead .today-flag{background:rgba(255,107,74,.18);}
+    input, select, textarea{color-scheme:dark;}
+  }
+
+  /* ---- icons ---- */
+  .ic{width:20px;height:20px;display:inline-block;vertical-align:middle;flex:none;}
+  .ic-sm{width:16px;height:16px;}
+  .tab .ic{width:24px;height:24px;}
+  .section-title .ic{margin:-3px 6px 0 0;color:var(--brick-dark);}
+
+  /* ---- #6 calmer cards: stripe only on today, normal capitalisation ---- */
+  .daycard::before{display:none;}
+  .daycard.today::before{display:block;}
+  .daycard{padding-left:4px;}
+  .daycard.today{padding-left:14px;}
+  details.picker-cat summary{text-transform:none;letter-spacing:0;font-size:14px;font-weight:600;color:var(--ink);}
+  .picker-cat h4{text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink);}
+
+  /* ---- #13 finger-sized tap targets ---- */
+  .del-x{min-width:40px;min-height:40px;display:inline-flex;align-items:center;justify-content:center;}
+  .chip{min-height:36px;}
+  .chip.season-chip{min-height:32px;}
+  .target-stepper button{width:34px;height:34px;}
+  .tipbtn{min-width:36px;min-height:36px;}
+  .busy-toggle input{width:20px;height:20px;}
+  .busy-toggle{font-size:12.5px;min-height:34px;}
+  .navbtn{min-width:44px;min-height:44px;}
+
+  /* ---- #5 one button system ---- */
+  .add-cat-form button{background:var(--brick);color:#FFF8EE;}
+  .btn.secondary{background:transparent;color:var(--ink);border:1.5px solid var(--paper-line);}
+  .notice-card{border-left-color:var(--brick);}
+  .recipes-toolbar{display:flex;gap:6px;align-items:center;margin:0 0 12px;flex-wrap:nowrap;}
+  .recipes-toolbar .btn.small{padding:8px 10px;white-space:nowrap;}
+  .recipes-toolbar .sec-count{white-space:nowrap;font-size:12px;}
+  .recipes-toolbar select{padding:9px 10px;border-radius:9px;border:1.5px solid var(--paper-line);background:var(--field);color:var(--ink);font-size:13.5px;}
+  .recipes-toolbar .spacer{flex:1;}
+  .builtin-tag{font-size:10.5px;color:var(--ink-soft);border:1px solid var(--paper-line);border-radius:6px;padding:1px 6px;margin-left:6px;font-weight:400;font-family:var(--font-body);}
+  .plan-ahead{border-left-color:var(--sage-dark);}
 </style>
 </head>
 <body>
 <div class="app" id="app"></div>
 <div id="overlayRoot"></div>
+<div id="dialogRoot"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -233,7 +360,7 @@ function seedDefaultState(){
     {id:uid(), name:'Good for lunch', weeklyMin:0, slotPref:'lunch', busyDay:false, manualOnly:false},
     {id:uid(), name:'Good for dinner', weeklyMin:0, slotPref:'dinner', busyDay:false, manualOnly:false}
   ];
-  return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null };
+  return { mealBases, mealTypes, recipes:[], days:{}, lastViewedWeekStart:null, freezerBank:[] };
 }
 function migrateFromV1(old){
   const mealBases = (old.categories||[]).map(c=>({id:c.id, name:c.name, weeklyTarget:c.weeklyTarget||0, ruleType:'upto', excludedSeasons:[]}));
@@ -326,6 +453,126 @@ function ensureBusyDayDefault(){
   }
 }
 ensureBusyDayDefault();
+// one-off tidy-ups agreed in the October review, plus the busy-tier field every type now has
+function runDataMigrations(){
+  state.migrated = state.migrated || {};
+  (state.mealTypes||[]).forEach(t=>{ if(t.busyTier==null) t.busyTier = t.busyDay ? 2 : 0; });
+  if(!state.migrated.review1){
+    const lc = s=>String(s||'').trim().toLowerCase();
+    // the "Freezer meal" base had no recipes and duplicated the freezer bank
+    const fz = state.mealBases.find(b=>lc(b.name)==='freezer meal');
+    if(fz && !state.recipes.some(r=>(r.baseIds||[]).includes(fz.id))) state.mealBases = state.mealBases.filter(b=>b!==fz);
+    // "Not often" was really a manual-only type
+    const no = state.mealTypes.find(t=>lc(t.name)==='not often' && t.manualOnly);
+    if(no) no.name = 'Manual only';
+    // Easy counts for busy days, Mindless stays top choice
+    const easy = state.mealTypes.find(t=>lc(t.name)==='easy');
+    if(easy && !easy.busyTier) easy.busyTier = 1;
+    // the Freezer type is only for freezer-bank meals, which are always planned first anyway
+    const frz = state.mealTypes.find(t=>lc(t.name)==='freezer');
+    if(frz && frz.busyTier===2) frz.busyTier = 1;
+    // "New" no longer has a weekly minimum — it wears off once you've had the meal
+    const nw = state.mealTypes.find(t=>lc(t.name)==='new');
+    if(nw) nw.weeklyMin = 0;
+    // "include regularly" with a 0-week gap was secretly treated as 2 weeks
+    state.mealBases.forEach(b=>{ if(b.ruleType==='regular' && !(b.weeklyTarget>0)) b.weeklyTarget = 2; });
+    state.migrated.review1 = true;
+  }
+  (state.mealTypes||[]).forEach(t=>{ t.busyDay = t.busyTier>0; });
+}
+runDataMigrations();
+
+/* ============================================================
+   WIZARD RULES (Settings > Wizard settings; can be overridden per plan in the wizard)
+   ============================================================ */
+const WIZARD_RULES = [
+  {group:'Wizard questions', key:'daysOut', label:'Ask which meals you\'re out', def:true,
+   tip:"If on, the wizard asks which lunches/dinners you'll be out, and those slots are not filled. If off, that step is skipped and every slot is planned."},
+  {group:'Wizard questions', key:'askFancy', label:'Ask what you\'re fancying', def:true,
+   tip:"If on, the wizard asks which meal bases you want more of this time. If off, that step is skipped and your usual base rules apply."},
+  {group:'Wizard questions', key:'askBusy', label:'Ask how busy the week is', def:true,
+   tip:"If on, the wizard asks your overall pace and worst day, and leans on busy-day meals to match. If off, that step is skipped and every plan is a normal week."},
+  {group:'Wizard questions', key:'askFreezer', label:'Ask what\'s in the freezer', def:true,
+   tip:"If on, the wizard lets you pick freezer-bank meals to work in. If off, that step is skipped and no freezer meals are planned automatically."},
+  {group:'Wizard questions', key:'askNew', label:'Ask about new recipes', def:true,
+   tip:"If on, the wizard asks if you're cooking anything new. If off, that step is skipped."},
+  {group:'How your answers are used', key:'fancyOverridesCap', label:'"Fancying" picks ignore "up to" limits', def:true,
+   tip:"If on, a base you pick under 'what are you fancying' can go past its 'up to' limit. If off, it's still favoured but stops at its limit."},
+  {group:'How your answers are used', key:'veryBusyStrict', label:'Very busy = busy-friendly meals only', def:true,
+   tip:"If on, a 'very busy' week only uses busy-day meals (e.g. Mindless) and your fancying picks, never slower meals, unless nothing else is left for a slot. If off, very busy just favours them more strongly."},
+  {group:'How your answers are used', key:'spreadPriority', label:'Spread freezer & new meals across days', def:true,
+   tip:"Freezer and new-to-try meals are always placed first. If on, they go one per day where possible. If off, they take the first free slots (so can land on the same day)."},
+  {group:'2–3× a week recipes', key:'repeatPair', label:'2–3× a week recipes: never just once', def:true,
+   tip:"If on, a recipe marked '2–3× a week' always appears at least twice and never more than three times in any rolling 7 days. If off, it's planned once like any other recipe."},
+  {group:'2–3× a week recipes', key:'repeatWindow', label:'Repeats land within', def:3, options:[1,2,3,4],
+   tip:"How close together the copies must be: every copy lands within this many days of the first one. Only used when the rule above is on."},
+  {group:'Meal bases', key:'minBases', label:'"At least" targets', def:true,
+   tip:"If on, bases set to 'at least N' get slots reserved first so the target is hit, and the wizard lets you skip one for a single plan. If off, those targets are ignored."},
+  {group:'Meal bases', key:'upToCap', label:'"Up to" limits', def:true,
+   tip:"If on, a base set to 'up to N' stops being used once N are in the plan (unless nothing else is left). If off, those limits are ignored."},
+  {group:'Meal bases', key:'regularBoost', label:'"Include regularly" boost', def:true,
+   tip:"If on, a base set to 'include regularly' is pushed harder the longer it's been since it last appeared. If off, no push."},
+  {group:'Recipes', key:'rotation', label:'Rotate through all your recipes', def:true,
+   tip:"If on, recipes you haven't had for a while (beyond their 'every N weeks' gap) are picked more often, so your whole library cycles through over the weeks instead of the same favourites. If off, picks don't consider how long it's been."},
+  {group:'Recipes', key:'variety', label:'Non-repeat recipes once per plan', def:true,
+   tip:"If on, a recipe NOT marked '2–3× a week' appears at most once per plan (unless your library runs out). If off, it can occasionally come up twice."},
+  {group:'Recipes', key:'freqGap', label:'"Every N weeks" gaps', def:true,
+   tip:"If on, a recipe isn't used again until its 'not more often than every N weeks' gap has passed (copies of a repeat-friendly recipe in the same week don't count). If off, the gaps are ignored."},
+  {group:'Recipes', key:'season', label:'Seasons', def:true,
+   tip:"If on, bases marked out of season aren't used (unless nothing else fits). If off, seasons are ignored."},
+  {group:'Recipes', key:'typeMinimums', label:'Meal type minimums', def:true,
+   tip:"If on, meal types with a weekly minimum (e.g. Mindless 6) are pushed until it's met. If off, those minimums are ignored."},
+  {group:'Recipes', key:'manualOnly', label:'Keep manual-only meals out', def:true,
+   tip:"If on, meals with a type marked 'manual only' are never picked by the wizard. Turn off (e.g. just for one plan) to let them be picked too — your type settings stay as they are."},
+  {group:'Same day', key:'slotPrefs', label:'Lunch-only / dinner-only types', def:true,
+   tip:"If on, a recipe with a 'lunch only' type (e.g. Good for lunch) is only ever planned for lunch, and 'dinner only' only for dinner. A recipe with both can go in either. If off, they can go anywhere."},
+  {group:'Same day', key:'sameRecipeDay', label:'No same recipe for lunch and dinner', def:true,
+   tip:"If on, the same recipe is never planned for both lunch and dinner on one day. If off, it can be (e.g. leftovers)."},
+  {group:'Same day', key:'sameDayClash', label:'No similar meals on one day', def:true,
+   tip:"If on, two different meals sharing a base or an obvious ingredient word (e.g. both 'chickpea') won't land on the same day. If off, they can."},
+  {group:'Clearing', key:'freezerReturn', label:'Freezer meals go back when cleared', def:true,
+   tip:"If on, freezer meals in a week you clear or re-plan go back into the freezer bank (with an undo). If off, they're just removed."}
+];
+function defaultWizardRules(){ const o={}; WIZARD_RULES.forEach(r=>o[r.key]=r.def); return o; }
+function getRules(extra){ return Object.assign(defaultWizardRules(), state.wizardRules||{}, extra||{}); }
+function renderRuleRows(scope){
+  const cur = scope==='wiz' ? getRules(wizard.rules) : getRules();
+  const setter = scope==='wiz' ? 'setWizRule' : 'setWizardRule';
+  let lastGroup = null, html = '', advancedOpen = false;
+  WIZARD_RULES.forEach((r,i)=>{
+    if(!advancedOpen && !r.group.startsWith('Wizard questions')){
+      advancedOpen = true;
+      html += `<details class="cfg-row" style="margin-top:10px;"${openSections.has('advRules')?' open':''} ontoggle="trackSectionToggle('advRules',this.open)"><summary><span class="cfg-name">Advanced planning rules</span><span class="cfg-sum">${WIZARD_RULES.length-i} rules</span></summary><div class="cfg-body">`;
+    }
+    if(r.group!==lastGroup){ html += `<div class="rule-group">${r.group}</div>`; lastGroup = r.group; }
+    const tipId = `tip_${scope}_${r.key}`;
+    let ctl;
+    if(r.options){
+      ctl = `<select onchange="${setter}('${r.key}',Number(this.value))">${r.options.map(o=>`<option value="${o}" ${Number(cur[r.key])===o?'selected':''}>${o} day${o===1?'':'s'}</option>`).join('')}</select>`;
+    } else {
+      ctl = `<label class="switch"><input type="checkbox" ${cur[r.key]?'checked':''} onchange="${setter}('${r.key}',this.checked)"><span class="slider"></span></label>`;
+    }
+    html += `<div class="wrule"><div class="wrule-top"><span class="wrule-name">${r.label}</span>
+      <button type="button" class="tipbtn" title="${r.tip.replace(/"/g,'&quot;')}" onclick="document.getElementById('${tipId}').classList.toggle('show')" aria-label="What does this do?">ⓘ</button>${ctl}</div>
+      <div class="wrule-tip" id="${tipId}">${r.tip}</div></div>`;
+  });
+  if(advancedOpen) html += '</div></details>';
+  return html;
+}
+function setWizardRule(key,val){ state.wizardRules = Object.assign({}, state.wizardRules||{}, {[key]:val}); saveState(); }
+function setWizRule(key,val){ wizard.rules = Object.assign({}, wizard.rules||{}, {[key]:val}); }
+function resetWizardRules(){ state.wizardRules = {}; saveState(); render(); toast('Wizard settings reset to defaults'); }
+function renderWizardRulesSection(){
+  return `
+    <details class="cat-card"${openSections.has('wizardRules')?' open':''} ontoggle="trackSectionToggle('wizardRules',this.open)">
+      <summary><h3 class="section-title">Planning</h3><span class="sec-count"></span></summary>
+      <div class="cat-body">
+        <p class="section-desc">The rules the planning wizard follows for every plan. The wizard itself only asks simple questions (how busy, days out, fancying, freezer, new) — tap ⓘ for what each rule does.</p>
+        ${renderRuleRows('set')}
+        <button class="btn ghost small" onclick="resetWizardRules()">Reset to defaults</button>
+      </div>
+    </details>`;
+}
 if(!state.recipeGroupBy) state.recipeGroupBy = 'base';
 if(!state.freezerBank) state.freezerBank = [];
 
@@ -355,18 +602,19 @@ const cloudSessionId = uid()+uid(); // lets us tell "a change I just pushed up" 
 let cloudUnsub = null;
 function cloudDocRef(uidVal){ return firebaseDb.collection('users').doc(uidVal); }
 function signInWithGoogle(){
-  if(!firebaseAuth){ alert("Sign-in isn't available right now — check your connection and try again."); return; }
+  if(!firebaseAuth){ appAlert('Sign-in unavailable', "Sign-in isn't available right now — check your connection and try again."); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
   firebaseAuth.signInWithRedirect(provider).catch(e=>{
     console.error('Google sign-in failed', e);
-    alert("Couldn't start Google sign-in: "+((e&&e.message)||'unknown error')+"\n\nThis usually means Google sign-in isn't enabled yet in the Firebase console (Authentication → Sign-in method), or this site isn't listed under Authentication → Settings → Authorized domains.");
+    appAlert("Couldn't start Google sign-in", ((e&&e.message)||'unknown error')+" — this usually means Google sign-in isn't enabled yet in the Firebase console (Authentication → Sign-in method), or this site isn't listed under Authentication → Settings → Authorized domains.");
   });
 }
 function signOutOfGoogle(){
   if(!firebaseAuth) return;
-  if(!confirm("Sign out? Your data stays backed up in the cloud, and this device keeps its own local copy too.")) return;
-  if(cloudUnsub){ cloudUnsub(); cloudUnsub = null; }
-  firebaseAuth.signOut();
+  appConfirm({title:'Sign out?', msg:'Your data stays backed up in the cloud, and this device keeps its own copy too.', ok:'Sign out'}, ()=>{
+    if(cloudUnsub){ cloudUnsub(); cloudUnsub = null; }
+    firebaseAuth.signOut();
+  });
 }
 function pushStateToCloud(uidVal){
   if(!firebaseDb) return;
@@ -376,6 +624,7 @@ function applyRemoteState(remoteState){
   applyingRemoteState = true;
   state = remoteState;
   if(!state.freezerBank) state.freezerBank = [];
+  runDataMigrations();
   if(!state.recipeGroupBy) state.recipeGroupBy = 'base';
   recomputeAllLastUsed();
   saveState(); // local cache only — guarded from bouncing straight back to the cloud
@@ -430,7 +679,7 @@ function resolveCloudConflict(choice){
 if(firebaseAuth){
   firebaseAuth.getRedirectResult().catch(e=>{
     console.error('Google sign-in failed', e);
-    alert("Google sign-in didn't complete: "+((e&&e.message)||'unknown error'));
+    appAlert("Google sign-in didn't complete", (e&&e.message)||'unknown error');
   });
   firebaseAuth.onAuthStateChanged(user=>{
     currentUser = user;
@@ -487,27 +736,30 @@ const SEASONS = ['winter','spring','summer','autumn'];
 /* ============================================================
    TOAST
    ============================================================ */
-let toastTimer;
+let toastTimer, toastActions = [];
+function hideToast(){ const el = document.getElementById('toast'); if(el){ el.classList.remove('show','with-action'); } clearTimeout(toastTimer); }
 function toast(msg, opts){
   const el = document.getElementById('toast');
   opts = opts || {};
   clearTimeout(toastTimer);
-  if(opts.actionLabel && opts.onAction){
-    el.innerHTML = `<span>${escapeHtml(msg)}</span><button type="button" class="toast-undo">${escapeHtml(opts.actionLabel)}</button>`;
+  toastActions = opts.actions || ((opts.actionLabel && opts.onAction) ? [{label:opts.actionLabel, onClick:opts.onAction}] : []);
+  if(toastActions.length){
+    el.innerHTML = `<span class="toast-msg">${escapeHtml(msg)}</span>` + toastActions.map((a,i)=>`<button type="button" class="toast-undo" data-i="${i}">${escapeHtml(a.label)}</button>`).join('');
     el.classList.add('show','with-action');
-    const btn = el.querySelector('.toast-undo');
-    if(btn) btn.onclick = (e)=>{
-      if(e && e.stopPropagation) e.stopPropagation();
-      clearTimeout(toastTimer);
-      el.classList.remove('show','with-action');
-      opts.onAction();
-    };
-    toastTimer = setTimeout(()=>el.classList.remove('show','with-action'), opts.duration || 5000);
+    (el.querySelectorAll ? el.querySelectorAll('.toast-undo') : []).forEach(btn=>{
+      btn.onclick = (e)=>{
+        if(e && e.stopPropagation) e.stopPropagation();
+        const a = toastActions[Number(btn.getAttribute('data-i'))];
+        hideToast();
+        if(a) a.onClick();
+      };
+    });
+    toastTimer = setTimeout(hideToast, opts.duration || 6000);
   } else {
     el.textContent = msg;
     el.classList.remove('with-action');
     el.classList.add('show');
-    toastTimer = setTimeout(()=>el.classList.remove('show'),1800);
+    toastTimer = setTimeout(hideToast, 2200);
   }
 }
 
@@ -546,11 +798,20 @@ function getMealBase(id){ return state.mealBases.find(b=>b.id===id); }
 function getMealType(id){ return state.mealTypes.find(t=>t.id===id); }
 function baseNames(r){ return (r.baseIds||[]).map(id=>{const b=getMealBase(id); return b?b.name:null;}).filter(Boolean); }
 function typeNames(r){ return (r.typeIds||[]).map(id=>{const t=getMealType(id); return t?t.name:null;}).filter(Boolean); }
-// the small label under a planned meal's name — shows the names of any meal types
-// flagged "show under the meal" (Settings → Meal types), and nothing else; the meal
-// base is never shown here any more
+// the small label under a planned meal's name: its meal base(s), plus any meal types
+// ticked "show under the meal" in Settings, e.g. "Pasta · Mindless"
 function mealDisplayLabel(r){
-  return (r.typeIds||[]).map(id=>{ const t=getMealType(id); return t && t.showOnMeal ? t.name : null; }).filter(Boolean).join(', ');
+  const bases = baseNames(r).join(' / ');
+  const types = (r.typeIds||[]).map(id=>{ const t=getMealType(id); return t && t.showOnMeal ? t.name : null; }).filter(Boolean);
+  return [bases, ...types].filter(Boolean).join(' · ');
+}
+function isBuiltInType(t){ const n = t && String(t.name||'').trim().toLowerCase(); return n==='new' || n==='freezer'; }
+function typeBusyTier(t){ return t ? (t.busyTier!=null ? t.busyTier : (t.busyDay?2:0)) : 0; }
+function recipeBusyTier(r){ return Math.max(0, ...(r.typeIds||[]).map(id=>typeBusyTier(getMealType(id)))); }
+// lunch-only / dinner-only meal types: a recipe with any of those can only go in a matching slot
+function recipeSlotOk(r, meal){
+  const prefs = new Set((r.typeIds||[]).map(id=>{ const t=getMealType(id); return t && t.slotPref; }).filter(Boolean));
+  return !prefs.size || prefs.has(meal);
 }
 function getOrCreateMealBase(name){
   let b = state.mealBases.find(b=>b.name.toLowerCase()===name.toLowerCase());
@@ -576,33 +837,75 @@ function addFreezerBankItem(name){
 function freezerNamesIn(slots){
   return slots.filter(s=>s && s.status==='planned' && s.fromFreezer && s.recipeName).map(s=>s.recipeName);
 }
-function returnToFreezer(names){
+function returnToFreezer(names, on){
+  if(on===undefined ? !getRules().freezerReturn : !on) return;
   names.forEach(n=>state.freezerBank.push({id:uid(), name:n}));
 }
-function freezerReturnNote(names){
-  if(!names.length) return '';
+function freezerReturnNote(names, on){
+  if(!names.length || (on===undefined ? !getRules().freezerReturn : !on)) return '';
   return `${names.length} freezer meal${names.length===1?'':'s'} back in the freezer: ${names.join(', ')}`;
 }
 function removeFreezerBankItem(id){
   captureUndo();
   state.freezerBank = state.freezerBank.filter(f=>f.id!==id);
   saveState(); render();
-  toastWithUndo('Removed from freezer bank');
+  toastWithUndo(`Removed from the freezer`);
 }
 function renameFreezerBankItem(id, name){
   const f = state.freezerBank.find(f=>f.id===id);
   if(f){ f.name = name.trim()||f.name; saveState(); }
 }
-function quickAddFreezerItem(){
-  const name = prompt('Add to freezer bank:');
-  if(!name || !name.trim()) return;
-  addFreezerBankItem(name);
-  toast('Added to freezer bank');
+function quickAddFreezerItem(){ openFreezerSheet(); }
+
+/* ---- backup nudge on the Plan screen ---- */
+function backupBannerDismissed(){
+  try{ const until = localStorage.getItem('mealPlan.backupNudgeUntil'); return until && until > todayISO(); }catch(e){ return false; }
 }
+function renderBackupBanner(){
+  if(currentUser || !firebaseAuth || backupBannerDismissed()) return '';
+  return `<div class="backup-banner">
+    <span>Only saved on this phone. Sign in to back up your meals.</span>
+    <button class="btn primary small" onclick="signInWithGoogle()">Sign in</button>
+    <button class="del-x" aria-label="Not now" onclick="dismissBackupBanner()">✕</button>
+  </div>`;
+}
+function dismissBackupBanner(){
+  try{ localStorage.setItem('mealPlan.backupNudgeUntil', addDays(todayISO(), 14)); }catch(e){}
+  render();
+}
+
+/* ---- freezer sheet (Plan screen ❄️) ---- */
+function openFreezerSheet(){
+  const rows = state.freezerBank.map(f=>`
+    <div class="rule-row" style="flex-wrap:nowrap;">
+      <input type="text" value="${escapeHtml(f.name)}" onchange="renameFreezerBankItem('${f.id}',this.value)" style="flex:1;">
+      <button class="del-x" aria-label="Remove" onclick="removeFreezerBankItem('${f.id}');openFreezerSheet()">✕</button>
+    </div>`).join('');
+  showOverlay(`
+    <h2>In the freezer</h2>
+    <p class="desc">Pick these when you plan meals — they come off the list once planned, and go back if you clear them.</p>
+    ${rows || '<p class="hint" style="text-align:left;">Nothing in the freezer yet.</p>'}
+    <div class="add-cat-form" style="margin-top:12px;">
+      <input type="text" id="freezerSheetNew" placeholder="e.g. chicken thighs" onkeydown="if(event.key==='Enter'){event.preventDefault();addFromFreezerSheet();}">
+      <button onclick="addFromFreezerSheet()">Add</button>
+    </div>
+    <div class="btnrow"><button class="btn primary" style="flex:1;" onclick="closeOverlay();render()">Done</button></div>
+  `);
+  setTimeout(()=>{ const i=document.getElementById('freezerSheetNew'); if(i && i.focus && !state.freezerBank.length) i.focus(); }, 30);
+}
+function addFromFreezerSheet(){
+  const input = document.getElementById('freezerSheetNew');
+  const name = (input && input.value || '').trim();
+  if(!name) return;
+  addFreezerBankItem(name);
+  openFreezerSheet();
+  setTimeout(()=>{ const i=document.getElementById('freezerSheetNew'); if(i && i.focus) i.focus(); }, 30);
+}
+
 function freqLabel(r){
   const parts = [];
-  parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'weekly ok' : `every ${r.frequencyWeeks} wks`);
-  if(r.multiply) parts.push('may repeat');
+  parts.push(!r.frequencyWeeks || r.frequencyWeeks<=1 ? 'Any week' : `Every ${r.frequencyWeeks} weeks`);
+  if(r.multiply) parts.push('2–3× a week');
   return parts.join(' \u00b7 ');
 }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -621,12 +924,13 @@ function sharesNameWord(r1, r2){
    VIEW STATE
    ============================================================ */
 let view = 'home';
-let viewWeekStart = mondayOnOrBefore(state.lastViewedWeekStart || todayISO());
+let viewWeekStart = mondayOnOrBefore(todayISO()); // always open on this week
 let currentSlotDate = null, currentSlotMeal = null;
 
 function render(){
   const app = document.getElementById('app');
-  app.innerHTML = view==='home' ? renderHome() : renderSettings();
+  const body = view==='home' ? renderHome() : view==='recipes' ? renderRecipesTab() : renderSettings();
+  app.innerHTML = body + renderTabBar();
   attachHomeHandlers();
 }
 
@@ -640,10 +944,18 @@ function renderHome(){
   const today = todayISO();
   const hasAnyContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
 
-  const daysHtml = days.map(date=>{
+  const pastDays = days.filter(d=>d<today);
+  const pastMeals = pastDays.reduce((c,d)=>{ const x=peekDay(d); return c+(x.lunch.status!=='empty'?1:0)+(x.dinner.status!=='empty'?1:0); },0);
+  const foldPast = pastDays.length && !showPastDays;
+  const pastSummary = pastDays.length ? (()=>{
+    const n = pastDays.reduce((c,d)=>{ const x=peekDay(d); return c+(x.lunch.status==='planned'?1:0)+(x.dinner.status==='planned'?1:0); },0);
+    const range = pastDays.length===1 ? dayName(pastDays[0]) : `${dayName(pastDays[0]).slice(0,3)}–${dayName(pastDays[pastDays.length-1]).slice(0,3)}`;
+    return `<button class="past-fold" onclick="togglePastDays()">${showPastDays?'▾':'▸'} ${range} <span>· ${n} meal${n===1?'':'s'} ${showPastDays?'· hide':''}</span></button>`;
+  })() : '';
+  const daysHtml = (pastMeals || showPastDays ? pastSummary : '') + days.filter(d=>!(foldPast && d<today)).map(date=>{
     const d = peekDay(date);
     return `
-    <div class="daycard"${date===today?' id="todayCard"':''}>
+    <div class="daycard${date<today?' past':''}${date===today?' today':''}"${date===today?' id="todayCard"':''}>
       <div class="dayhead">
         <span class="dname">${dayName(date)}</span>
         <span class="ddate">${dayShort(date)}</span>
@@ -661,33 +973,35 @@ function renderHome(){
   if(viewWeekStart===thisMonday) weekLabel = 'This week';
   else if(viewWeekStart===addDays(thisMonday,7)) weekLabel = 'Next week';
 
+  const planBtn = smartPlanButton(days, today, weekLabel);
+  const hiddenPast = pastDays.length && !pastMeals && !showPastDays;
   return `
     <div class="topbar">
       <div class="brand">
-        <span class="kicker">this week's table</span>
-        <h1>Meal Plan</h1>
+        <h1>Meal Plan${currentUser ? ` <span class="cloud-ok" title="Backed up to your Google account">${icon('cloud','ic-sm')}</span>` : ''}</h1>
       </div>
-      <div style="display:flex;gap:8px;">
-        <button class="iconbtn" onclick="jumpToThisWeek()" aria-label="Jump to this week" title="This week">🗓️</button>
-        <button class="iconbtn" onclick="jumpToToday()" aria-label="Jump to today" title="Today">📍</button>
-        <button class="iconbtn" onclick="shareCurrentWeek()" aria-label="Live-share this week" title="Live-share this week">🔗</button>
-        <button class="iconbtn" onclick="openSettings()" aria-label="Settings">⚙</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        ${viewWeekStart!==thisMonday ? `<button class="iconbtn" onclick="jumpToToday()" aria-label="Back to this week" title="Back to this week">${icon('today')}</button>` : ''}
+        <button class="freezer-chip" onclick="openFreezerSheet()" aria-label="Freezer">${icon('snow','ic-sm')} ${(state.freezerBank||[]).length}</button>
       </div>
     </div>
-    <div style="display:flex;gap:8px;align-items:stretch;margin:6px 0 20px;">
-      <button class="stamp-btn" onclick="openWizard()" style="display:block;flex:1;">Plan meals
-        <span class="sub">how long, days out, cravings, freezer, new</span>
+    ${renderBackupBanner()}
+    <div style="margin:6px 0 20px;">
+      <button class="stamp-btn" onclick="${planBtn.action}" style="display:block;width:100%;">${planBtn.label}
+        <span class="sub">${planBtn.sub}</span>
       </button>
-      <button class="iconbtn" onclick="quickAddFreezerItem()" aria-label="Add to freezer bank" title="Add to freezer bank">❄️</button>
     </div>
+    ${renderPlanAheadCard()}
     <div class="weeknav">
       <button class="navbtn" onclick="shiftWeek(-7)">‹</button>
       <div class="range" id="weekRangeLabel">
         ${weekLabel ? `<strong style="display:block;color:var(--brick-dark);font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;">${weekLabel}</strong>` : ''}
-        ${firstLabel} – ${lastLabel}<small>swipe to change week · hold to clear</small>
+        ${firstLabel} – ${lastLabel}<small>swipe to change week · <button class="weekmenu-btn" style="font-size:12px;padding:0;color:inherit;text-decoration:underline;" onclick="openWeekMenu()">week options</button>${hiddenPast ? ` · <button class="weekmenu-btn" style="font-size:12px;padding:0;color:inherit;text-decoration:underline;" onclick="togglePastDays()">earlier days</button>` : ''}</small>
       </div>
       <button class="navbtn" onclick="shiftWeek(7)">›</button>
     </div>
+    ${renderStaleNotice(days)}
+    ${renderNewReviewCard()}
     <div class="week-wrap" id="weekWrap">
       ${daysHtml}
       ${hint}
@@ -712,6 +1026,34 @@ function renderMealRow(date, meal, slot){
   </div>`;
 }
 
+let showPastDays = false;
+function smartPlanButton(days, today, weekLabel){
+  const open = days.filter(d=>d>=today);
+  const slots = open.length*2;
+  const empty = open.reduce((n,d)=>{ const x=peekDay(d); return n+(x.lunch.status==='empty'?1:0)+(x.dinner.status==='empty'?1:0); },0);
+  const which = weekLabel==='This week' ? 'this week' : weekLabel==='Next week' ? 'next week' : `w/c ${dayShort(days[0])}`;
+  if(!open.length) return {label:'Plan meals', sub:'pick the days and it plans them', action:'openWizard()'};
+  if(empty===slots) return {label: open.length<7 ? `Plan the rest of ${which}` : `Plan ${which}`, sub:'a few quick questions, then it plans the week', action:'openWizard()'};
+  if(empty>0) return {label:'Fill the gaps', sub:`${empty} meal${empty===1?'':'s'} still to plan ${which}`, action:'openWizard({fill:true})'};
+  const nextLabel = weekLabel==='This week' ? 'Plan next week' : 'Plan the week after';
+  return {label: nextLabel, sub:`${which.charAt(0).toUpperCase()+which.slice(1)} is all planned`, action:'openWizard({nextWeek:true})'};
+}
+function renderPlanAheadCard(){
+  const thisMonday = mondayOnOrBefore(todayISO());
+  if(viewWeekStart!==thisMonday) return '';
+  const dow = fromISO(todayISO()).getDay(); // 0 Sun … 5 Fri, 6 Sat
+  if(!(dow===5 || dow===6 || dow===0)) return '';
+  const nextMonday = addDays(thisMonday, 7);
+  if(state.planAheadDismissed===nextMonday) return '';
+  const any = weekDates(nextMonday).some(d=>{ const x=peekDay(d); return x.lunch.status!=='empty' || x.dinner.status!=='empty'; });
+  if(any) return '';
+  return `<div class="notice-card plan-ahead">
+    <h3>Next week isn't planned yet</h3>
+    <p>Get it sorted now so the shopping's easy.</p>
+    <div class="btnrow" style="margin:0;"><button class="btn ghost small" onclick="state.planAheadDismissed='${nextMonday}';saveState();render()">Not now</button><button class="btn primary small" onclick="openWizard({nextWeek:true})">Plan next week</button></div>
+  </div>`;
+}
+function togglePastDays(){ showPastDays = !showPastDays; render(); }
 function shiftWeek(n){
   viewWeekStart = addDays(viewWeekStart, n);
   state.lastViewedWeekStart = viewWeekStart;
@@ -749,7 +1091,6 @@ function attachHomeHandlers(){
     }, {passive:true});
   }
 
-  let lastTapRow = null, lastTapTime = 0, pendingTapTimer = null;
   document.querySelectorAll('.meal-row').forEach(row=>{
     let rsx=0, rsy=0, rdragging=false;
     row.addEventListener('touchstart', e=>{
@@ -777,27 +1118,8 @@ function attachHomeHandlers(){
       }
     }, {passive:true});
 
-    // single tap opens the slot editor; a second tap within the window opens the
-    // recipe editor for whatever's planned there instead — held briefly so we can tell them apart
     row.addEventListener('click', ()=>{
-      const date = row.getAttribute('data-date');
-      const meal = row.getAttribute('data-meal');
-      const now = Date.now();
-      if(lastTapRow===row && (now-lastTapTime)<350){
-        clearTimeout(pendingTapTimer);
-        lastTapRow = null; lastTapTime = 0;
-        const slot = peekDay(date)[meal];
-        if(slot.status==='planned' && slot.recipeId){
-          openRecipeEditor(slot.recipeId);
-        } else {
-          openSlotEditor(date, meal);
-        }
-        return;
-      }
-      lastTapRow = row; lastTapTime = now;
-      pendingTapTimer = setTimeout(()=>{
-        if(lastTapRow===row){ lastTapRow = null; openSlotEditor(date, meal); }
-      }, 300);
+      openSlotEditor(row.getAttribute('data-date'), row.getAttribute('data-meal'));
     });
   });
 
@@ -820,6 +1142,21 @@ function attachLongPress(el, callback, duration){
   el.addEventListener('mouseleave', cancel);
 }
 
+function openWeekMenu(){
+  const days = weekDates(viewWeekStart);
+  const label = `${fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} – ${fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`;
+  showOverlay(`
+    <h2>This week</h2>
+    <p class="desc">${label}</p>
+    <div class="btnrow" style="flex-direction:column;align-items:stretch;">
+      <button class="btn secondary" onclick="closeOverlay();openWizard({replan:true})">Re-plan this week from scratch</button>
+      <button class="btn secondary" onclick="closeOverlay();shareCurrentWeek()">Live-share this week</button>
+      <button class="btn danger" onclick="openClearWeekConfirm()">Clear this week</button>
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+    </div>
+    <p class="hint">Shortcut: hold the week dates to clear.</p>
+  `);
+}
 function openClearWeekConfirm(){
   const days = weekDates(viewWeekStart);
   const label = `${fromISO(days[0]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})} – ${fromISO(days[6]).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}`;
@@ -846,6 +1183,153 @@ function clearCurrentWeek(){
   closeOverlay();
   render();
   toastWithUndo(freezerNames.length ? `Week cleared — ${freezerReturnNote(freezerNames)}` : 'Week cleared', freezerNames.length ? 7000 : undefined);
+}
+
+
+/* ============================================================
+   NOTICES: settings changed since a week was planned; "New" meal check-ins
+   ============================================================ */
+function settingsSignature(){
+  const R = getRules();
+  const src = JSON.stringify([
+    WIZARD_RULES.map(x=>R[x.key]),
+    state.mealBases.map(b=>[b.id,b.ruleType||'upto',b.weeklyTarget||0,(b.excludedSeasons||[]).slice().sort()]),
+    state.mealTypes.map(t=>[t.id,t.weeklyMin||0,t.slotPref||'',typeBusyTier(t),!!t.manualOnly])
+  ]);
+  let h = 0; for(let i=0;i<src.length;i++){ h = ((h<<5)-h + src.charCodeAt(i))|0; }
+  return String(h);
+}
+function staleDatesIn(days){
+  const today = todayISO(), sig = settingsSignature();
+  return days.filter(d=>d>=today && state.days[d] && state.days[d].planSig && state.days[d].planSig!==sig);
+}
+function renderStaleNotice(days){
+  if(!staleDatesIn(days).length) return '';
+  return `<div class="notice-card">
+    <h3>Settings changed since this week was planned</h3>
+    <p>Your rules, meal bases or meal types have changed. Re-plan the rest of the week to use the new settings, or keep it as it is.</p>
+    <div class="btnrow" style="margin:0;"><button class="btn ghost small" onclick="dismissStale()">Keep as is</button><button class="btn primary small" onclick="replanStale()">Re-plan</button></div>
+  </div>`;
+}
+function dismissStale(){
+  const sig = settingsSignature();
+  weekDates(viewWeekStart).forEach(d=>{ if(state.days[d] && state.days[d].planSig) state.days[d].planSig = sig; });
+  saveState(); render();
+}
+function replanStale(){
+  openWizard();
+  const today = todayISO();
+  wizard.startDate = viewWeekStart > today ? viewWeekStart : today;
+  wizard.endDate = addDays(viewWeekStart, 6);
+  renderWizardStep1();
+}
+
+let newReviewKeepOpen = null;
+function newReviewSnoozedUntil(id){ return (state.newReviewSnooze||{})[id] || ''; }
+function newTypeId(){ const t = state.mealTypes.find(t=>t.name.trim().toLowerCase()==='new'); return t ? t.id : null; }
+function pendingNewReviews(){
+  const nid = newTypeId(); if(!nid) return [];
+  const today = todayISO(), eatenOn = {};
+  Object.keys(state.days).forEach(d=>{
+    if(d>=today) return;
+    ['lunch','dinner'].forEach(m=>{ const s = state.days[d][m]; if(s && s.status==='planned' && s.recipeId && (!eatenOn[s.recipeId] || d>eatenOn[s.recipeId])) eatenOn[s.recipeId] = d; });
+  });
+  return state.recipes.filter(r=>!r.ephemeral && (r.typeIds||[]).includes(nid) && eatenOn[r.id] && !(newReviewSnoozedUntil(r.id) > today))
+    .map(r=>({r, date:eatenOn[r.id]}));
+}
+function renderNewReviewCard(){
+  const q = pendingNewReviews(); if(!q.length) return '';
+  const {r, date} = q[0];
+  if(newReviewKeepOpen===r.id){
+    const f = window.__nrFreq, opts = [[1,'Any week'],[2,'Every 2 weeks'],[4,'Every 4 weeks'],[8,'Every 8 weeks']];
+    return `<div class="notice-card">
+      <h3>How often for ${escapeHtml(r.name)}?</h3>
+      <p>How often should it come round?</p>
+      <div class="chip-group" style="margin-bottom:10px;">${opts.map(([n,l])=>`<button type="button" class="chip ${f===n?'active':''}" onclick="setNrFreq(${n})">${l}</button>`).join('')}</div>
+      <label class="busy-toggle" style="margin-bottom:10px;"><input type="checkbox" ${window.__nrMulti?'checked':''} onchange="window.__nrMulti=this.checked"> 2–3× a week</label>
+      <div class="btnrow" style="margin:0;"><button class="btn ghost small" onclick="newReviewKeepOpen=null;render()">Back</button><button class="btn primary small" onclick="saveNewReview('${r.id}')">Save</button></div>
+    </div>`;
+  }
+  return `<div class="notice-card">
+    <h3>How did ${escapeHtml(r.name)} go?</h3>
+    <p>You had it ${dayName(date)} ${dayShort(date)}. Keep it in your recipes?</p>
+    <div class="btnrow" style="margin:0;flex-wrap:wrap;">
+      <button class="btn ghost small" onclick="snoozeNewReview('${r.id}')">Ask later</button>
+      <button class="btn ghost small" onclick="dropNewRecipe('${r.id}')">Not for us</button>
+      <button class="btn primary small" onclick="newReviewKeep('${r.id}')">Keep it</button>
+    </div>
+  </div>`;
+}
+function newReviewKeep(id){ const r = getRecipe(id); if(!r) return; newReviewKeepOpen = id; window.__nrFreq = (r.frequencyWeeks>1 ? r.frequencyWeeks : 2); window.__nrMulti = !!r.multiply; render(); }
+function setNrFreq(n){ window.__nrFreq = n; render(); }
+function snoozeNewReview(id){ state.newReviewSnooze = Object.assign({}, state.newReviewSnooze||{}, {[id]: addDays(todayISO(),1)}); saveState(); render(); toast('Okay — I\'ll ask again tomorrow'); }
+function saveNewReview(id){
+  const r = getRecipe(id); if(!r) return;
+  captureUndo();
+  const nid = newTypeId();
+  r.typeIds = (r.typeIds||[]).filter(t=>t!==nid);
+  r.frequencyWeeks = window.__nrFreq || 2;
+  r.multiply = !!window.__nrMulti;
+  newReviewKeepOpen = null;
+  saveState(); render();
+  toastWithUndo(`Kept ${r.name} — no longer "New"`);
+}
+function dropNewRecipe(id){
+  const r = getRecipe(id); if(!r) return;
+  captureUndo();
+  state.recipes = state.recipes.filter(x=>x.id!==id);
+  saveState(); render();
+  toastWithUndo(`Removed ${r.name} from your recipes`);
+}
+
+/* ---- duplicate recipe names ---- */
+function normRecipeName(n){ return String(n||'').trim().toLowerCase().replace(/\s+/g,' '); }
+function duplicateGroups(){
+  const m = {};
+  state.recipes.filter(r=>!r.ephemeral).forEach(r=>{ const k = normRecipeName(r.name); (m[k]=m[k]||[]).push(r); });
+  return Object.values(m).filter(g=>g.length>1);
+}
+function renderDuplicatesSection(){
+  const groups = duplicateGroups(); if(!groups.length) return '';
+  const rows = groups.map(g=>`
+    <div class="rule-row" style="display:block;">
+      <div style="font-weight:700;">${escapeHtml(g[0].name)} <span class="sec-count">×${g.length}</span></div>
+      ${g.map(r=>`<div class="rmeta" style="font-size:12px;color:var(--ink-soft);">• ${escapeHtml(baseNames(r).join(', ')||'no base')}${typeNames(r).length?' · '+escapeHtml(typeNames(r).join(', ')):''} · ${freqLabel(r)}</div>`).join('')}
+      <button class="btn primary small" style="margin-top:8px;" onclick="mergeRecipes('${g.map(r=>r.id).join(',')}')">Merge into one</button>
+    </div>`).join('');
+  return `
+    <details class="cat-card" open>
+      <summary><h3 class="section-title">${icon('alert')}Possible duplicates</h3><span class="sec-count">${groups.length}</span></summary>
+      <div class="cat-body">
+        <p class="section-desc">These recipes share a name. Merging keeps one recipe with all their bases and types combined; planned meals point to the kept one.</p>
+        ${rows}
+      </div>
+    </details>`;
+}
+function mergeRecipes(idsCsv){
+  const ids = idsCsv.split(','); const group = ids.map(getRecipe).filter(Boolean);
+  if(group.length<2) return;
+  captureUndo();
+  const uses = {}; Object.values(state.days).forEach(d=>['lunch','dinner'].forEach(m=>{ const s=d[m]; if(s && s.recipeId) uses[s.recipeId]=(uses[s.recipeId]||0)+1; }));
+  group.sort((a,b)=>(uses[b.id]||0)-(uses[a.id]||0));
+  const keep = group[0], drop = group.slice(1);
+  drop.forEach(r=>{
+    keep.baseIds = Array.from(new Set([...(keep.baseIds||[]), ...(r.baseIds||[])]));
+    keep.typeIds = Array.from(new Set([...(keep.typeIds||[]), ...(r.typeIds||[])]));
+    keep.multiply = keep.multiply || r.multiply;
+  });
+  const dropIds = new Set(drop.map(r=>r.id));
+  Object.values(state.days).forEach(d=>['lunch','dinner'].forEach(m=>{ const s=d[m]; if(s && dropIds.has(s.recipeId)){ s.recipeId = keep.id; s.recipeName = keep.name; } }));
+  state.recipes = state.recipes.filter(r=>!dropIds.has(r.id));
+  recomputeAllLastUsed();
+  saveState(); render();
+  toastWithUndo(`Merged into one "${keep.name}"`);
+}
+function confirmIfDuplicateName(name, exceptId, cont){
+  const k = normRecipeName(name);
+  const clash = state.recipes.find(r=>!r.ephemeral && r.id!==exceptId && normRecipeName(r.name)===k);
+  if(!clash){ cont(); return; }
+  appConfirm({title:'Already in your recipes', msg:`You already have a recipe called "${clash.name}". Add another one anyway?`, ok:'Add anyway'}, cont);
 }
 
 /* ============================================================
@@ -880,13 +1364,38 @@ function openSlotEditor(date, meal){
 
   window.__qaDraft = { baseIds:[], typeIds:[] };
 
-  showOverlay(`
-    <h2>${dayName(date)} · ${meal}</h2>
-    <p class="desc">${dayShort(date)}</p>
-    <div class="btnrow" style="margin-top:0;margin-bottom:16px;">
+  const cur = peekDay(date)[meal];
+  const curRecipe = cur.recipeId ? getRecipe(cur.recipeId) : null;
+  let topHtml;
+  if(cur.status==='planned'){
+    topHtml = `
+    <div class="current-meal">
+      <div class="cm-name">${escapeHtml(cur.recipeName || (curRecipe?curRecipe.name:''))}</div>
+      <div class="cm-label">${escapeHtml(curRecipe ? mealDisplayLabel(curRecipe) : (cur.baseLabel||''))}</div>
+    </div>
+    <div class="action-grid">
+      ${cur.recipeId ? `<button class="btn primary" onclick="closeOverlay();swapMeal('${date}','${meal}')">Suggest another</button>` : ''}
+      <button class="btn ghost" onclick="closeOverlay();openMovePrompt('${date}','${meal}')">Move / swap day</button>
+      ${curRecipe ? `<button class="btn ghost" onclick="openRecipeEditor('${curRecipe.id}')">Edit recipe</button>` : ''}
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
     </div>
+    <p class="hint" style="margin:-8px 0 14px;">Shortcuts: swipe right to suggest another, left to move.</p>
+    <h4 style="margin:0 0 8px;">Or pick something else</h4>`;
+  } else if(cur.status==='out'){
+    topHtml = `<div class="current-meal"><div class="cm-name">Out — no meal needed</div></div>
+    <div class="action-grid"><button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Not out after all</button></div>`;
+  } else {
+    topHtml = `<div class="action-grid">
+      <button class="btn primary" onclick="closeOverlay();swapMeal('${date}','${meal}')">Suggest one</button>
+      <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
+    </div>
+    <h4 style="margin:0 0 8px;">Or pick one</h4>`;
+  }
+  showOverlay(`
+    <h2>${dayName(date)} · ${meal}</h2>
+    <p class="desc">${dayShort(date)}</p>
+    ${topHtml}
     <div class="field" style="margin-bottom:16px;">
       <label>Just write it in — quick, one-off, no need to save it as a recipe</label>
       <div style="display:flex;gap:8px;">
@@ -940,35 +1449,39 @@ function toggleQaType(id){
   const el = document.querySelector(`#qaTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
 }
 function qaNewBase(){
-  const name = prompt('New meal base name:');
-  if(!name || !name.trim()) return;
-  const typedName = (document.getElementById('qaName')||{}).value || '';
-  const b = getOrCreateMealBase(name.trim());
-  const keep = window.__qaDraft;
-  openSlotEditor(currentSlotDate, currentSlotMeal);
-  window.__qaDraft.baseIds = [...keep.baseIds, b.id];
-  const el = document.querySelector(`#qaBaseChips [data-id="${b.id}"]`); if(el) el.classList.add('active');
-  const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+  appPrompt({title:'New meal base', placeholder:'e.g. Couscous'}, name=>{
+    if(!name || !name.trim()) return;
+    const typedName = (document.getElementById('qaName')||{}).value || '';
+    const b = getOrCreateMealBase(name.trim());
+    const keep = window.__qaDraft;
+    openSlotEditor(currentSlotDate, currentSlotMeal);
+    window.__qaDraft.baseIds = [...keep.baseIds, b.id];
+    const el = document.querySelector(`#qaBaseChips [data-id="${b.id}"]`); if(el) el.classList.add('active');
+    const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+  });
 }
 function qaNewType(){
-  const name = prompt('New meal type name:');
-  if(!name || !name.trim()) return;
-  const typedName = (document.getElementById('qaName')||{}).value || '';
-  const t = getOrCreateMealType(name.trim());
-  const keep = window.__qaDraft;
-  openSlotEditor(currentSlotDate, currentSlotMeal);
-  window.__qaDraft.typeIds = [...keep.typeIds, t.id];
-  const el = document.querySelector(`#qaTypeChips [data-id="${t.id}"]`); if(el) el.classList.add('active');
-  const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+  appPrompt({title:'New meal type', placeholder:'e.g. Batch cook'}, name=>{
+    if(!name || !name.trim()) return;
+    const typedName = (document.getElementById('qaName')||{}).value || '';
+    const t = getOrCreateMealType(name.trim());
+    const keep = window.__qaDraft;
+    openSlotEditor(currentSlotDate, currentSlotMeal);
+    window.__qaDraft.typeIds = [...keep.typeIds, t.id];
+    const el = document.querySelector(`#qaTypeChips [data-id="${t.id}"]`); if(el) el.classList.add('active');
+    const nameEl = document.getElementById('qaName'); if(nameEl) nameEl.value = typedName;
+  });
 }
 function quickAdd(date, meal){
   const nameEl = document.getElementById('qaName');
   const name = nameEl.value.trim();
   if(!name){ nameEl.focus(); return; }
-  const d = window.__qaDraft;
-  const recipe = {id:uid(), name, baseIds:[...d.baseIds], typeIds:[...d.typeIds], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
-  state.recipes.push(recipe);
-  assignSlot(date, meal, recipe.id);
+  confirmIfDuplicateName(name, null, ()=>{
+    const d = window.__qaDraft;
+    const recipe = {id:uid(), name, baseIds:[...d.baseIds], typeIds:[...d.typeIds], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+    state.recipes.push(recipe);
+    assignSlot(date, meal, recipe.id);
+  });
 }
 function assignSlot(date, meal, recipeId, forceStatus){
   captureUndo();
@@ -1015,109 +1528,72 @@ function assignFreeText(date, meal){
 /* ---- swap: swipe a planned meal right to swing in a different eligible recipe ---- */
 function swapMeal(date, meal){
   const day = ensureDay(date);
-  const slot = day[meal];
-  if(slot.status!=='planned' || !slot.recipeId) return;
-  const current = getRecipe(slot.recipeId);
-  if(!current){ toast("Can't find that recipe to swap."); return; }
-
-  const season = getSeason(date);
-  function freqOk(r){
-    const freq = r.frequencyWeeks || 1;
-    return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, date) < freq);
+  const cur = day[meal];
+  const curRecipe = (cur.status==='planned' && cur.recipeId) ? getRecipe(cur.recipeId) : null;
+  captureUndo();
+  const before = undoSnapshot;
+  returnToFreezer(freezerNamesIn([cur]));
+  day[meal] = emptySlot();
+  // run the real planner for just this one meal, with the rest of the week as context,
+  // so a suggestion follows exactly the same rules as a full plan
+  const saved = wizard;
+  wizard = { startDate:date, endDate:date, skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1,
+    freezerSelectedIds:[], newText:'', newItemsQueue:[], newItemsIndex:0, rules:{},
+    onlySlots:[date+'_'+meal], excludeIds: curRecipe ? [curRecipe.id] : [], quiet:true, noUndo:true, contextCounts:true, scaleSlots:14 };
+  let filled = 0;
+  try{ filled = proceedGeneratePlan(false); } finally { wizard = saved; }
+  undoSnapshot = before;
+  const now = state.days[date][meal];
+  if(!filled || now.status!=='planned'){
+    try{ state = JSON.parse(before); }catch(e){}
+    saveState(); render();
+    toast(curRecipe ? 'Nothing else fits your rules for this meal' : 'No recipes fit your rules here — try picking one');
+    return;
   }
-  function seasonOk(r){
-    return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
-  }
-  function conflictsOnDay(r){
-    return ['lunch','dinner'].some(m=>{
-      if(m===meal) return false; // ignore the slot being replaced itself
-      const other = day[m];
-      if(other.status!=='planned' || !other.recipeId) return false;
-      const o = getRecipe(other.recipeId);
-      if(!o) return false;
-      const baseClash = (r.baseIds||[]).length && (o.baseIds||[]).some(id=>(r.baseIds||[]).includes(id));
-      return baseClash || sharesNameWord(r, o);
-    });
-  }
-
-  function isManualOnly(r){
-    return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
-  }
-
-  const pool = state.recipes.filter(r=>!r.ephemeral && r.id!==current.id && !isManualOnly(r));
-  const sameBase = r=>(r.baseIds||[]).some(id=>(current.baseIds||[]).includes(id));
-
-  // best case: same meal-base family, fully eligible, no day conflict
-  let candidates = pool.filter(r=>sameBase(r) && freqOk(r) && seasonOk(r) && !conflictsOnDay(r));
-  // next: any recipe, fully eligible, no day conflict
-  if(!candidates.length) candidates = pool.filter(r=>freqOk(r) && seasonOk(r) && !conflictsOnDay(r));
-  // last resort: relax the day-conflict check rather than refuse to swap at all
-  if(!candidates.length) candidates = pool.filter(r=>freqOk(r) && seasonOk(r));
-  if(!candidates.length) candidates = pool;
-  if(!candidates.length){ toast('No other recipe to swap in.'); return; }
-
-  candidates.sort((a,b)=>{
-    const av=a.lastUsedWeekStart||'0000-00-00', bv=b.lastUsedWeekStart||'0000-00-00';
-    if(av===bv) return Math.random()-0.5;
-    return av<bv?-1:1;
-  });
-  const picked = candidates[0];
-  assignSlot(date, meal, picked.id);
-  toastWithUndo(`Swapped in ${picked.name}`);
+  toastWithUndo(curRecipe ? `Swapped in ${now.recipeName}` : `Added ${now.recipeName}`);
 }
 
 /* ---- move: swipe a planned meal left to relocate it to a different day/meal ---- */
 let moveSource = null;
-function openMovePrompt(date, meal){
+function openMovePrompt(date, meal, showOther){
   const slot = peekDay(date)[meal];
   if(slot.status!=='planned') return;
   moveSource = {date, meal};
-  window.__moveTargetMeal = meal;
+  const week = weekDates(mondayOnOrBefore(date));
+  const cell = (d,m)=>{
+    const x = peekDay(d)[m];
+    const isCur = d===date && m===meal;
+    const what = x.status==='planned' ? escapeHtml(x.recipeName||'') : x.status==='out' ? 'out' : 'free';
+    return `<button type="button" class="move-cell ${isCur?'current':''}" ${isCur?'disabled':''} onclick="moveTo('${d}','${m}')">${m==='lunch'?'Lunch':'Dinner'}<small>${isCur?'(here now)':what}</small></button>`;
+  };
   showOverlay(`
     <h2>Move "${escapeHtml(slot.recipeName||'this meal')}"</h2>
-    <p class="desc">Where do you want to move it to?</p>
-    <div class="field">
-      <label>Date</label>
-      <input type="date" id="moveDate" value="${date}">
+    <p class="desc">Tap where it should go. If there's already a meal there, you can swap the two.</p>
+    <div class="move-grid">
+      ${week.map(d=>`<span class="mday">${dayName(d).slice(0,3)} <span style="font-weight:400;color:var(--ink-soft);">${dayShort(d).replace(/^\w+\s/,'')}</span></span>${cell(d,'lunch')}${cell(d,'dinner')}`).join('')}
     </div>
-    <div class="field">
-      <label>Meal</label>
-      <div class="chip-group">
-        <button type="button" class="chip ${meal==='lunch'?'active':''}" data-meal="lunch" onclick="setMoveMeal('lunch')">Lunch</button>
-        <button type="button" class="chip ${meal==='dinner'?'active':''}" data-meal="dinner" onclick="setMoveMeal('dinner')">Dinner</button>
-      </div>
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
-      <button class="btn primary" onclick="confirmMoveTarget()">Next</button>
-    </div>
+    ${showOther ? `
+    <div class="field"><label>Another date</label><input type="date" id="moveDate" value="${date}"></div>
+    <div class="chip-group" style="margin-bottom:10px;">
+      <button type="button" class="chip" onclick="moveTo(document.getElementById('moveDate').value,'lunch')">Lunch</button>
+      <button type="button" class="chip" onclick="moveTo(document.getElementById('moveDate').value,'dinner')">Dinner</button>
+    </div>` : `<button class="btn ghost small" onclick="openMovePrompt('${date}','${meal}',true)">Another date…</button>`}
+    <div class="btnrow"><button class="btn ghost" style="flex:1;" onclick="closeOverlay()">Cancel</button></div>
   `);
 }
-function setMoveMeal(m){
-  window.__moveTargetMeal = m;
-  document.querySelectorAll('.chip[data-meal]').forEach(el=>{
-    el.classList.toggle('active', el.getAttribute('data-meal')===m);
-  });
-}
-function confirmMoveTarget(){
-  const targetDate = document.getElementById('moveDate').value;
-  const targetMeal = window.__moveTargetMeal;
+function moveTo(targetDate, targetMeal){
   if(!targetDate || !targetMeal || !moveSource) return;
-  if(targetDate===moveSource.date && targetMeal===moveSource.meal){
-    closeOverlay();
-    moveSource = null;
-    return;
-  }
+  if(targetDate===moveSource.date && targetMeal===moveSource.meal){ closeOverlay(); moveSource = null; return; }
   const destSlot = peekDay(targetDate)[targetMeal];
   if(destSlot.status==='planned'){
     showOverlay(`
       <h2>Swap or replace?</h2>
       <p class="desc">${dayName(targetDate)} ${targetMeal} already has "${escapeHtml(destSlot.recipeName||'a meal')}".</p>
       <div class="btnrow">
-        <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
-        <button class="btn primary" onclick="doMove('${targetDate}','${targetMeal}',true)">Swap the two</button>
+        <button class="btn ghost" onclick="openMovePrompt('${moveSource.date}','${moveSource.meal}')">Back</button>
+        <button class="btn primary" style="flex:1;" onclick="doMove('${targetDate}','${targetMeal}',true)">Swap the two</button>
       </div>
-      <div class="btnrow"><button class="btn danger" onclick="doMove('${targetDate}','${targetMeal}',false)" style="flex:1;">Replace it (discard the other)</button></div>
+      <button class="link-danger" onclick="doMove('${targetDate}','${targetMeal}',false)">Replace it instead (removes "${escapeHtml(destSlot.recipeName||'the other meal')}")</button>
     `);
   } else {
     doMove(targetDate, targetMeal, false);
@@ -1153,9 +1629,28 @@ function doMove(targetDate, targetMeal, swap){
    WIZARD: Plan meals
    ============================================================ */
 let wizard = { startDate:null, endDate:null, skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1, freezerSelectedIds:[], newText:'', newItemsQueue:[], newItemsIndex:0 };
-function openWizard(){
-  wizard = { startDate: viewWeekStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1, freezerSelectedIds:[], newText:'', newItemsQueue:[], newItemsIndex:0 };
+function openWizard(opts){
+  opts = opts || {};
+  if(!state.recipes.some(r=>!r.ephemeral)){ showFirstRecipes(); return; }
+  if(opts.nextWeek){ viewWeekStart = addDays(viewWeekStart, 7); state.lastViewedWeekStart = viewWeekStart; render(); }
+  const today = todayISO();
+  const wStart = (today>viewWeekStart && today<=addDays(viewWeekStart,6)) ? today : viewWeekStart; // don't plan days already gone
+  wizardDatesOpen = false;
+  wizard = { startDate: wStart, endDate: addDays(viewWeekStart,6), skips:{}, fancyBaseIds:[], skipMinBaseIds:[], busyDate:null, busyLevel:1, freezerSelectedIds:[], newText:'', newItemsQueue:[], newItemsIndex:0, rules:{},
+    mode: opts.replan ? 'replace' : (opts.fill ? 'fill' : null) };
   renderWizardStep1();
+}
+function showFirstRecipes(){
+  showOverlay(`
+    <h2>Add a few recipes first</h2>
+    <p class="desc">The planner picks from your own recipes. Paste or type the meals you usually make — one per line or separated by commas. You'll tag each one quickly next (all optional).</p>
+    <div class="field"><textarea id="bulkImportText" rows="6" placeholder="e.g. Spaghetti bolognese, Chicken fajitas, Veggie chilli, Beans on toast"></textarea></div>
+    <p class="hint" style="text-align:left;">Aim for at least 10 so a week has some variety. You can add more any time in Recipes.</p>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeOverlay()">Later</button>
+      <button class="btn primary" style="flex:1;" onclick="startBulkImport()">Next</button>
+    </div>
+  `);
 }
 function dots(n,total){
   let s='<div class="steps-dots">';
@@ -1163,84 +1658,128 @@ function dots(n,total){
   return s+'</div>';
 }
 function setWizDuration(n){
-  const startVal = document.getElementById('wizStart').value || wizard.startDate;
-  document.getElementById('wizEnd').value = addDays(startVal, n-1);
+  saveWizardDates();
+  wizard.endDate = addDays(wizard.startDate, n-1);
+  renderWizardStep1();
+}
+// The wizard is a short conversation. Which questions get asked is set in
+// Settings › Wizard settings; the rules themselves are never listed here.
+const WIZ_ORDER = [
+  {id:'dates',   on:R=>true,          show:()=>renderWizardStep1()},
+  {id:'out',     on:R=>R.daysOut,     show:()=>wizardStepOut()},
+  {id:'fancy',   on:R=>R.askFancy,    show:()=>wizardStepFancy()},
+  {id:'freezer', on:R=>R.askFreezer,  show:()=>wizardStepFreezer()},
+  {id:'new',     on:R=>R.askNew,      show:()=>wizardStepNew()},
+  {id:'summary', on:R=>true,          show:()=>wizardStepSummary()}
+];
+function wizEnabledSteps(){ const R = getRules(wizard.rules); return WIZ_ORDER.filter(st=>st.on(R)); }
+function wizDots(id){ const st = wizEnabledSteps(); return dots(Math.max(1, st.findIndex(x=>x.id===id)+1), st.length); }
+function saveWizardDates(){
+  const sEl = document.getElementById('wizStart'), eEl = document.getElementById('wizEnd');
+  if(sEl && sEl.value) wizard.startDate = sEl.value;
+  if(eEl && eEl.value) wizard.endDate = eEl.value;
+  if(fromISO(wizard.endDate) < fromISO(wizard.startDate)){ appAlert('Check the dates', "The end date can't be before the start date."); return false; }
+  return true;
+}
+function wizNext(from){
+  if(from==='dates' && !saveWizardDates()) return;
+  if(from==='new'){ const el = document.getElementById('wizNew'); if(el) wizard.newText = el.value; }
+  const st = wizEnabledSteps(); const i = st.findIndex(x=>x.id===from);
+  (st[i+1] || st[st.length-1]).show();
+}
+function wizBack(from){
+  if(from==='new'){ const el = document.getElementById('wizNew'); if(el) wizard.newText = el.value; }
+  const st = wizEnabledSteps(); const i = st.findIndex(x=>x.id===from);
+  (st[i-1] || st[0]).show();
+}
+function wizButtons(id, nextLabel){
+  return `<div class="btnrow">
+      ${id==='dates' ? `<button class="btn ghost" onclick="closeOverlay()">Cancel</button>` : `<button class="btn ghost" onclick="wizBack('${id}')">Back</button>`}
+      <button class="btn primary" onclick="wizNext('${id}')">${nextLabel||'Next'}</button>
+    </div>`;
 }
 function renderWizardStep1(){
+  const R = getRules(wizard.rules);
+  const days = datesBetween(wizard.startDate, wizard.endDate);
+  const level = wizard.busyLevel||1;
+  const levelChip = (v,l)=>`<button type="button" class="chip ${level===v?'active':''}" onclick="setBusyLevel(${v})">${l}</button>`;
+  const rangeLabel = days.length ? `${dayName(days[0])} ${dayShort(days[0])} – ${dayName(days[days.length-1])} ${dayShort(days[days.length-1])}` : '';
+  let busy = '';
+  if(R.askBusy){
+    busy = `<h3 class="wiz-q">How's the week looking?</h3>
+      <div class="chip-group">${levelChip(1,'Normal')}${levelChip(1.6,'Busy')}${levelChip(2.5,'Very busy')}</div>`;
+    if(level>1){
+      busy += `<p class="desc" style="margin-top:14px;">Is one day worse than the rest? <span style="opacity:.7;">(optional)</span></p>
+        <div class="chip-group" id="busyDayChips">${days.map(d=>`<button type="button" class="chip ${wizard.busyDate===d?'active':''}" onclick="setBusyDate('${d}')">${dayName(d).slice(0,3)} <span style="opacity:.7;">${dayShort(d).replace(/^\w+\s/,'')}</span></button>`).join('')}</div>`;
+    }
+    if(level>=2){
+      busy += `<p class="desc" style="margin-top:14px;">Keep it to quick meals — mostly ${escapeHtml(topChoiceTypeNames())} — or mix in a few others?</p>
+        <div class="chip-group">
+          <button type="button" class="chip ${R.veryBusyStrict?'active':''}" onclick="setWizStrict(true)">Quick meals only</button>
+          <button type="button" class="chip ${!R.veryBusyStrict?'active':''}" onclick="setWizStrict(false)">Mix in others</button>
+        </div>`;
+    }
+  }
   showOverlay(`
-    ${dots(1,6)}
-    <h2>Plan meals</h2>
-    <p class="desc">How long are you planning meals for?</p>
-    <div class="field">
-      <label>Start date</label>
-      <input type="date" id="wizStart" value="${wizard.startDate}">
+    ${wizDots('dates')}
+    <h2>${wizard.mode==='fill' ? 'Fill the gaps' : wizard.mode==='replace' ? 'Re-plan from scratch' : "Let's plan"}</h2>
+    <h3 class="wiz-q">Which days?</h3>
+    <p class="desc" id="wizRangeLabel" style="margin:0 0 8px;">${escapeHtml(rangeLabel)} · ${days.length} day${days.length===1?'':'s'}${wizardDatesOpen ? '' : ` · <button type="button" class="linkbtn" onclick="wizardDatesOpen=true;renderWizardStep1()">change</button>`}</p>
+    <div style="${wizardDatesOpen?'':'display:none;'}">
+      <div class="field"><label>From</label><input type="date" id="wizStart" value="${wizard.startDate}" onchange="saveWizardDates();renderWizardStep1()"></div>
+      <div class="field"><label>Until (last day included)</label><input type="date" id="wizEnd" value="${wizard.endDate}" onchange="saveWizardDates();renderWizardStep1()"></div>
+      <div class="chip-group" style="margin-bottom:6px;">
+        <button type="button" class="chip" onclick="setWizDuration(3)">3 days</button>
+        <button type="button" class="chip" onclick="setWizDuration(7)">1 week</button>
+        <button type="button" class="chip" onclick="setWizDuration(10)">10 days</button>
+        <button type="button" class="chip" onclick="setWizDuration(14)">2 weeks</button>
+      </div>
     </div>
-    <div class="field">
-      <label>Until (last day included)</label>
-      <input type="date" id="wizEnd" value="${wizard.endDate}">
-    </div>
-    <div class="chip-group" style="margin-bottom:6px;">
-      <button type="button" class="chip" onclick="setWizDuration(3)">3 days</button>
-      <button type="button" class="chip" onclick="setWizDuration(7)">1 week</button>
-      <button type="button" class="chip" onclick="setWizDuration(10)">10 days</button>
-      <button type="button" class="chip" onclick="setWizDuration(14)">2 weeks</button>
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
-      <button class="btn primary" onclick="wizardStep2()">Next</button>
-    </div>
+    ${busy}
+    ${wizButtons('dates')}
   `);
 }
-function wizardStep2(){
-  const startVal = document.getElementById('wizStart').value;
-  const endVal = document.getElementById('wizEnd').value;
-  if(startVal) wizard.startDate = startVal;
-  if(endVal) wizard.endDate = endVal;
-  if(fromISO(wizard.endDate) < fromISO(wizard.startDate)){
-    alert("The end date can't be before the start date.");
-    return;
-  }
+let wizardDatesOpen = false;
+function topChoiceTypeNames(){
+  const names = state.mealTypes.filter(t=>typeBusyTier(t)===2).map(t=>t.name);
+  return names.length ? names.join(' / ') : 'busy-day';
+}
+function setBusyLevel(level){ saveWizardDates(); wizard.busyLevel = level; if(level<=1) wizard.busyDate = null; renderWizardStep1(); }
+function setBusyDate(d){ saveWizardDates(); wizard.busyDate = (wizard.busyDate===d) ? null : d; renderWizardStep1(); }
+function setWizStrict(v){ saveWizardDates(); wizard.rules = Object.assign({}, wizard.rules||{}, {veryBusyStrict:v}); renderWizardStep1(); }
+function wizardStepOut(){
   const days = datesBetween(wizard.startDate, wizard.endDate);
   const rows = days.map(date=>['lunch','dinner'].map(meal=>{
     const key = date+'_'+meal;
-    const checked = wizard.skips[key] ? 'checked' : '';
     return `<div class="crow">
       <span class="cname">${dayName(date)} ${meal}<small>${dayShort(date)}</small></span>
-      <input type="checkbox" data-key="${key}" ${checked} onchange="toggleSkip('${key}')">
+      <input type="checkbox" data-key="${key}" ${wizard.skips[key]?'checked':''} onchange="toggleSkip('${key}')">
     </div>`;
   }).join('')).join('');
-
   showOverlay(`
-    ${dots(2,6)}
+    ${wizDots('out')}
     <h2>Any meals you'll be out?</h2>
-    <p class="desc">Check any lunch or dinner you won't need planned — eating out, travelling, etc.</p>
+    <p class="desc">Tick any you won't need — those stay free.</p>
     <div class="checklist">${rows}</div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="renderWizardStep1()">Back</button>
-      <button class="btn primary" onclick="wizardStep3()">Next</button>
-    </div>
+    ${wizButtons('out')}
   `);
 }
 function toggleSkip(key){ wizard.skips[key] = !wizard.skips[key]; }
-
-function wizardStep3(){
+function wizardStepFancy(){
   const season = getSeason(wizard.startDate);
   const inSeasonBases = state.mealBases.filter(b=>!(b.excludedSeasons||[]).includes(season));
   const chips = inSeasonBases.map(b=>`<button type="button" class="chip ${wizard.fancyBaseIds.includes(b.id)?'active':''}" data-id="${b.id}" onclick="toggleFancyBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
   const minBases = state.mealBases.filter(b=>b.ruleType==='min');
   const skipChips = minBases.map(b=>`<button type="button" class="chip ${wizard.skipMinBaseIds.includes(b.id)?'active':''}" data-skipmin-id="${b.id}" onclick="toggleSkipMinBase('${b.id}')">${escapeHtml(b.name)}</button>`).join('');
   showOverlay(`
-    ${dots(3,6)}
-    <h2>What are you fancying?</h2>
-    <p class="desc">Tick any meal bases you want this stretch to lean on. Leave blank to just use your usual weekly targets from Settings. (Bases marked out of season for ${season} aren't shown.)</p>
+    ${wizDots('fancy')}
+    <h2>Fancying anything?</h2>
+    <p class="desc">Tap any you'd like more of this time — or skip.</p>
     <div class="chip-group">${chips || '<p class="desc">No in-season meal bases to choose from.</p>'}</div>
-    ${minBases.length ? `
-    <p class="desc" style="margin-top:14px;">"At least" is normally a hard target — the planner will actively try to hit it whenever your recipe library allows. Tick any you want to skip just for this one-off plan:</p>
+    ${minBases.length && getRules(wizard.rules).minBases ? `
+    <p class="desc" style="margin-top:16px;">Give any of your usual "at least" bases a rest this time?</p>
     <div class="chip-group">${skipChips}</div>` : ''}
-    <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep2()">Back</button>
-      <button class="btn primary" onclick="wizardStep4()">Next</button>
-    </div>
+    ${wizButtons('fancy')}
   `);
 }
 function toggleFancyBase(id){
@@ -1253,74 +1792,24 @@ function toggleSkipMinBase(id){
   if(i===-1) wizard.skipMinBaseIds.push(id); else wizard.skipMinBaseIds.splice(i,1);
   const el = document.querySelector(`.chip[data-skipmin-id="${id}"]`); if(el) el.classList.toggle('active');
 }
-
-function wizardStep4(){
-  const days = datesBetween(wizard.startDate, wizard.endDate);
-  const chips = days.map(d=>`<button type="button" class="chip" data-date="${d}" onclick="setBusyDate('${d}')">${dayName(d)} <span style="opacity:.7;">${dayShort(d)}</span></button>`).join('');
-  showOverlay(`
-    ${dots(4,6)}
-    <h2>How busy is this stretch?</h2>
-    <p class="desc">This overrides your usual rules just for this plan — a busier pace leans harder on easy meals throughout, not just on one day.</p>
-    <div class="field">
-      <label>Overall pace</label>
-      <div class="chip-group" id="busyLevelChips">
-        <button type="button" class="chip" data-level="1" onclick="setBusyLevel(1)">Normal</button>
-        <button type="button" class="chip" data-level="1.6" onclick="setBusyLevel(1.6)">Busier than usual</button>
-        <button type="button" class="chip" data-level="2.5" onclick="setBusyLevel(2.5)">Very busy</button>
-      </div>
-    </div>
-    <div class="field">
-      <label>Worst single day (optional)</label>
-      <div class="chip-group" id="busyDayChips">${chips}</div>
-    </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep3()">Back</button>
-      <button class="btn primary" onclick="wizardStep5()">Next</button>
-    </div>
-  `);
-  document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
-    el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
-  });
-  document.querySelectorAll('#busyLevelChips [data-level]').forEach(el=>{
-    el.classList.toggle('active', parseFloat(el.getAttribute('data-level'))===(wizard.busyLevel||1));
-  });
-}
-function setBusyDate(d){
-  wizard.busyDate = (wizard.busyDate===d) ? null : d;
-  document.querySelectorAll('#busyDayChips [data-date]').forEach(el=>{
-    el.classList.toggle('active', el.getAttribute('data-date')===wizard.busyDate);
-  });
-}
-function setBusyLevel(level){
-  wizard.busyLevel = level;
-  document.querySelectorAll('#busyLevelChips [data-level]').forEach(el=>{
-    el.classList.toggle('active', parseFloat(el.getAttribute('data-level'))===level);
-  });
-}
-
 function renderFreezerChips(){
-  if(!state.freezerBank.length) return '<p class="hint">Nothing in your freezer bank yet — tap the ❄️ next to Plan meals to add some, or add one below.</p>';
+  if(!state.freezerBank.length) return '<p class="hint" style="text-align:left;">Nothing in your freezer bank yet — add something below, or skip.</p>';
   return state.freezerBank.map(f=>`<button type="button" class="chip ${wizard.freezerSelectedIds.includes(f.id)?'active':''}" data-id="${f.id}" onclick="toggleFreezerSelected('${f.id}')">${escapeHtml(f.name)}</button>`).join('');
 }
-function wizardStep5(){
+function wizardStepFreezer(){
   showOverlay(`
-    ${dots(5,6)}
-    <h2>What's in the freezer?</h2>
-    <p class="desc">Pick anything from your freezer bank you want worked in this time. Used items come off the bank once planned.</p>
+    ${wizDots('freezer')}
+    <h2>Anything from the freezer to use up?</h2>
+    <p class="desc">Tap any to work in — they come off the freezer bank once planned.</p>
+    <div class="field"><div class="chip-group" id="wizFreezerChips">${renderFreezerChips()}</div></div>
     <div class="field">
-      <div class="chip-group" id="wizFreezerChips">${renderFreezerChips()}</div>
-    </div>
-    <div class="field">
-      <label>Add something new to the bank</label>
+      <label>Add something to the freezer bank</label>
       <div style="display:flex;gap:8px;">
         <input type="text" id="wizFreezerNew" placeholder="e.g. chicken thighs" style="flex:1;">
         <button class="btn ghost" onclick="wizardAddFreezerItem()">Add</button>
       </div>
     </div>
-    <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep4()">Back</button>
-      <button class="btn primary" onclick="wizardStep6()">Next</button>
-    </div>
+    ${wizButtons('freezer')}
   `);
 }
 function toggleFreezerSelected(id){
@@ -1334,24 +1823,56 @@ function wizardAddFreezerItem(){
   if(!name) return;
   const item = addFreezerBankItem(name);
   wizard.freezerSelectedIds.push(item.id);
-  wizardStep5();
+  wizardStepFreezer();
 }
-function wizardStep6(){
+function wizardStepNew(){
   showOverlay(`
-    ${dots(6,6)}
-    <h2>Cooking anything new?</h2>
-    <p class="desc">List any new recipes you want to try — one per line or separated by commas. Leave blank to skip.</p>
+    ${wizDots('new')}
+    <h2>Trying anything new?</h2>
+    <p class="desc">Type any new recipes — one per line or separated by commas. Or skip.</p>
     <div class="field">
       <textarea id="wizNew" rows="4" placeholder="e.g. miso salmon traybake">${escapeHtml(wizard.newText)}</textarea>
     </div>
+    ${wizButtons('new')}
+  `);
+}
+function wizardSummaryLines(){
+  const R = getRules(wizard.rules);
+  const days = datesBetween(wizard.startDate, wizard.endDate);
+  const lines = [];
+  lines.push(`${dayName(days[0])} ${dayShort(days[0])} – ${dayName(days[days.length-1])} ${dayShort(days[days.length-1])} (${days.length} day${days.length===1?'':'s'})`);
+  if(R.askBusy){
+    const lvl = wizard.busyLevel||1;
+    let t = lvl>=2 ? 'Very busy' : lvl>1 ? 'Busy' : 'Normal week';
+    if(lvl>=2) t += R.veryBusyStrict ? ` — quick meals only (mostly ${topChoiceTypeNames()})` : ' — quick meals, with a few others';
+    if(lvl>1 && wizard.busyDate) t += `, worst day ${dayName(wizard.busyDate)}`;
+    lines.push(t);
+  }
+  if(R.daysOut){
+    const outs = Object.keys(wizard.skips).filter(k=>wizard.skips[k] && days.includes(k.split('_')[0]));
+    if(outs.length) lines.push('Out: ' + outs.sort().map(k=>{ const [d,m]=k.split('_'); return `${dayName(d).slice(0,3)} ${m}`; }).join(', '));
+  }
+  if(R.askFancy && wizard.fancyBaseIds.length) lines.push('More ' + wizard.fancyBaseIds.map(id=>{ const b=getMealBase(id); return b?b.name:''; }).filter(Boolean).join(', '));
+  if(R.askFancy && wizard.skipMinBaseIds.length && R.minBases) lines.push('Resting ' + wizard.skipMinBaseIds.map(id=>{ const b=getMealBase(id); return b?b.name:''; }).filter(Boolean).join(', '));
+  if(R.askFreezer && wizard.freezerSelectedIds.length) lines.push('From the freezer: ' + wizard.freezerSelectedIds.map(id=>{ const f=state.freezerBank.find(x=>x.id===id); return f?f.name:''; }).filter(Boolean).join(', '));
+  if(R.askNew){ const n = parseList(wizard.newText); if(n.length) lines.push('Trying: ' + n.join(', ')); }
+  return lines;
+}
+function wizardStepSummary(){
+  showOverlay(`
+    ${wizDots('summary')}
+    <h2>Here's the plan</h2>
+    <ul class="desc" style="padding-left:18px;line-height:1.7;">${wizardSummaryLines().map(l=>`<li>${escapeHtml(l)}</li>`).join('')}</ul>
+    <p class="hint" style="text-align:left;">Everything else follows your Wizard settings.</p>
     <div class="btnrow">
-      <button class="btn ghost" onclick="wizardStep5()">Back</button>
-      <button class="btn primary" onclick="finishNewRecipesStep()">Next</button>
+      <button class="btn ghost" onclick="wizBack('summary')">Back</button>
+      <button class="btn primary" onclick="finishNewRecipesStep()">Plan it</button>
     </div>
   `);
 }
 function finishNewRecipesStep(){
-  wizard.newText = document.getElementById('wizNew').value;
+  const newEl = document.getElementById('wizNew'); if(newEl) wizard.newText = newEl.value;
+  if(!getRules(wizard.rules).askNew) wizard.newText = '';
   const names = parseList(wizard.newText);
   if(!names.length){ generatePlan(); return; }
   wizard.newItemsQueue = names.map(name=>({name, baseIds:[], typeIds:[], frequencyWeeks:1, multiply:false}));
@@ -1378,14 +1899,14 @@ function showCategorizeNewItem(){
       <div class="chip-group" id="newItemTypeChips">${typeChips}</div>
     </div>
     <div class="field">
-      <label>How often can it repeat across weeks?</label>
+      <label>How often</label>
       <select id="newItemFreq" onchange="setNewItemFreq(this.value)">
-        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(item.frequencyWeeks||1)===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(item.frequencyWeeks||1)===n?'selected':''}>${n===1?'Any week':'Every '+n+' weeks'}</option>`).join('')}
       </select>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
       <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" ${item.multiply?'checked':''} onchange="setNewItemMultiply(this.checked)">
-      can repeat 2-3x in the same week
+      2–3× a week (batch cook: it comes back 2–3 times within a few days)
     </label>
     <div class="btnrow">
       <button class="btn ghost" onclick="nextNewItem()">Skip</button>
@@ -1412,18 +1933,20 @@ function toggleNewItemType(id){
   const el = document.querySelector(`#newItemTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
 }
 function newItemNewBase(){
-  const name = prompt('New meal base name:');
-  if(!name || !name.trim()) return;
-  const b = getOrCreateMealBase(name.trim());
-  wizard.newItemsQueue[wizard.newItemsIndex].baseIds.push(b.id);
-  showCategorizeNewItem();
+  appPrompt({title:'New meal base', placeholder:'e.g. Couscous'}, name=>{
+    if(!name || !name.trim()) return;
+    const b = getOrCreateMealBase(name.trim());
+    wizard.newItemsQueue[wizard.newItemsIndex].baseIds.push(b.id);
+    showCategorizeNewItem();
+  });
 }
 function newItemNewType(){
-  const name = prompt('New meal type name:');
-  if(!name || !name.trim()) return;
-  const t = getOrCreateMealType(name.trim());
-  wizard.newItemsQueue[wizard.newItemsIndex].typeIds.push(t.id);
-  showCategorizeNewItem();
+  appPrompt({title:'New meal type', placeholder:'e.g. Batch cook'}, name=>{
+    if(!name || !name.trim()) return;
+    const t = getOrCreateMealType(name.trim());
+    wizard.newItemsQueue[wizard.newItemsIndex].typeIds.push(t.id);
+    showCategorizeNewItem();
+  });
 }
 function nextNewItem(){
   if(wizard.newItemsIndex+1 < wizard.newItemsQueue.length){
@@ -1441,6 +1964,8 @@ function generatePlan(){
   const startISO = wizard.startDate;
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
+  if(wizard.mode==='replace'){ proceedGeneratePlan(true); return; }
+  if(wizard.mode==='fill'){ wizard.contextCounts = true; wizard.scaleSlots = days.length*2; proceedGeneratePlan(false); return; }
   const hasContent = days.some(date=>{ const d=peekDay(date); return d.lunch.status!=='empty'||d.dinner.status!=='empty'; });
   if(hasContent){
     showOverlay(`
@@ -1450,7 +1975,7 @@ function generatePlan(){
       <h2 style="margin-top:-8px;">Replace existing plan?</h2>
       <p class="desc">Some of these days already have a plan. Replace everything, or just fill in whatever's still blank?</p>
       <div class="btnrow">
-        <button class="btn ghost" onclick="proceedGeneratePlan(false)">No, just fill blanks</button>
+        <button class="btn ghost" onclick="wizard.contextCounts=true;wizard.scaleSlots=datesBetween(wizard.startDate,wizard.endDate).length*2;proceedGeneratePlan(false)">No, just fill blanks</button>
         <button class="btn primary" onclick="proceedGeneratePlan(true)">Yes, replace all</button>
       </div>
     `);
@@ -1459,6 +1984,13 @@ function generatePlan(){
   proceedGeneratePlan(true);
 }
 function proceedGeneratePlan(overwriteAll){
+  if(!wizard.noUndo) captureUndo(); // planning can wipe a week — always undoable
+  const R = getRules(wizard.rules); // settings defaults, with this plan's overrides on top
+  // a wizard question that's switched off contributes nothing, even if it was answered earlier
+  if(!R.askFancy) wizard.fancyBaseIds = [];
+  if(!R.askBusy){ wizard.busyLevel = 1; wizard.busyDate = null; }
+  if(!R.askFreezer) wizard.freezerSelectedIds = [];
+  if(!R.askNew){ wizard.newText = ''; wizard.newItemsQueue = []; }
   const startISO = wizard.startDate;
   const endISO = wizard.endDate;
   const days = datesBetween(startISO, endISO);
@@ -1468,7 +2000,7 @@ function proceedGeneratePlan(overwriteAll){
     const lostSlots = [];
     days.forEach(date=>{ const d = state.days[date]; if(d) lostSlots.push(d.lunch, d.dinner); });
     replacedFreezerNames = freezerNamesIn(lostSlots);
-    returnToFreezer(replacedFreezerNames);
+    returnToFreezer(replacedFreezerNames, R.freezerReturn);
     days.forEach(date=>{ state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
   } else {
     days.forEach(date=>{ if(!state.days[date]) state.days[date] = {lunch:emptySlot(), dinner:emptySlot()}; });
@@ -1481,7 +2013,9 @@ function proceedGeneratePlan(overwriteAll){
     ['lunch','dinner'].forEach(meal=>{
       const key = date+'_'+meal;
       const day = state.days[date];
-      if(wizard.skips[key]){
+      if(wizard.onlySlots && !wizard.onlySlots.includes(key)){
+        // a single-meal suggestion: leave every other slot alone
+      } else if(R.daysOut && wizard.skips[key]){
         day[meal] = {status:'out', recipeId:null, recipeName:null, baseLabel:null};
       } else if(!overwriteAll && day[meal].status!=='empty'){
         // already has content and we're only filling blanks — leave it alone
@@ -1523,7 +2057,9 @@ function proceedGeneratePlan(overwriteAll){
   const priorityDates = new Set();
   for(let i=0;i<priorityCount;i++){
     const r = priorityPool[i];
-    let idx = slotsLeft.findIndex(s=>!priorityDates.has(s.date));
+    const fitsSlot = s=>!R.slotPrefs || recipeSlotOk(r, s.meal);
+    let idx = R.spreadPriority ? slotsLeft.findIndex(s=>!priorityDates.has(s.date) && fitsSlot(s)) : -1;
+    if(idx===-1) idx = slotsLeft.findIndex(fitsSlot);
     if(idx===-1) idx = 0;
     const slot = slotsLeft.splice(idx,1)[0];
     priorityDates.add(slot.date);
@@ -1541,23 +2077,27 @@ function proceedGeneratePlan(overwriteAll){
 
   if(remainingSlots.length){
     const fancy = wizard.fancyBaseIds || [];
+    const fancyNoCap = R.fancyOverridesCap ? fancy : [];
 
     function isManualOnly(r){
-      return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
+      return R.manualOnly && (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.manualOnly; });
     }
     function seasonOkAt(r, refDate){
+      if(!R.season) return true;
       const season = getSeason(refDate);
       return !(r.baseIds||[]).some(id=>{ const b=getMealBase(id); return b && (b.excludedSeasons||[]).includes(season); });
     }
     // hard "not more often than every N weeks" check — a recipe used inside its own
     // frequency window is genuinely ineligible for that slot, not just down-weighted
     function freqOkAt(r, refDate){
+      if(!R.freqGap) return true;
       const freq = r.frequencyWeeks || 1;
       return !(r.lastUsedWeekStart && weeksBetween(r.lastUsedWeekStart, refDate) < freq);
     }
     // the exact same recipe already sitting on this day (lunch === dinner) — always
     // excluded, never part of the relax cascade below
     function sameRecipeAlreadyOnDay(r, date){
+      if(!R.sameRecipeDay) return false;
       const day = state.days[date];
       if(!day) return false;
       return ['lunch','dinner'].some(meal=>day[meal].status==='planned' && day[meal].recipeId===r.id);
@@ -1565,6 +2105,7 @@ function proceedGeneratePlan(overwriteAll){
     // avoid two DIFFERENT meals sharing a meal base or an obvious shared ingredient
     // (e.g. two stews, or two titles both mentioning chickpeas) landing on the same day
     function hasBaseConflictOnDay(r, date){
+      if(!R.sameDayClash) return false;
       const day = state.days[date];
       if(!day) return false;
       return ['lunch','dinner'].some(meal=>{
@@ -1594,6 +2135,24 @@ function proceedGeneratePlan(overwriteAll){
       (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
       (r.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1);
     });
+    // meals already on the calendar in the same week(s) count towards variety; when filling
+    // gaps or suggesting a single meal they also count towards caps, minimums and leanings
+    (()=>{
+      const toFill = new Set(slotOrder.map(x=>x.date+'_'+x.meal));
+      datesBetween(mondayOnOrBefore(startISO), addDays(mondayOnOrBefore(endISO),6)).forEach(d=>{
+        const day = state.days[d]; if(!day) return;
+        ['lunch','dinner'].forEach(m=>{
+          if(toFill.has(d+'_'+m)) return;
+          const sl = day[m]; if(!sl || sl.status!=='planned' || !sl.recipeId) return;
+          const r = getRecipe(sl.recipeId); if(!r || r.ephemeral) return;
+          usedThisRun.add(r.id);
+          if(wizard.contextCounts){
+            (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
+            (r.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1);
+          }
+        });
+      });
+    })();
 
     // for "include regularly" bases, find how long it's actually been since each one
     // last appeared anywhere in the plan, so a long-absent base can get a boost
@@ -1616,7 +2175,7 @@ function proceedGeneratePlan(overwriteAll){
     // every "X per week" rule is really "X per 14 meals" — scale it to however many
     // meals this session actually covers, so a 3-day plan and a 10-day plan both apply
     // the rule proportionally instead of assuming a fixed calendar week
-    const scaleFactor = slotOrder.length / 14;
+    const scaleFactor = (wizard.scaleSlots || slotOrder.length) / 14;
     function scaledTarget(n){
       if(!n || n<=0) return 0;
       return Math.max(1, Math.round(n * scaleFactor));
@@ -1625,19 +2184,21 @@ function proceedGeneratePlan(overwriteAll){
     // an "up to N" meal base is a firm cap, not a nudge: once N recipes from it are in
     // this plan, nothing else from that base goes in (relaxed only as a last resort)
     function capReached(r){
+      if(!R.upToCap) return false;
       return (r.baseIds||[]).some(id=>{
         const b = getMealBase(id);
         if(!b || b.ruleType==='min' || b.ruleType==='regular') return false;
-        if(fancy.includes(id)) return false; // asked for "more of this" in the wizard — overrides the cap
+        if(fancyNoCap.includes(id)) return false; // asked for "more of this" in the wizard — overrides the cap
         const cap = scaledTarget(b.weeklyTarget);
         return cap>0 && (baseUsedCount[id]||0) >= cap;
       });
     }
     function capRoom(r){ // how many more copies of r fit before an "up to" cap is hit
+      if(!R.upToCap) return Infinity;
       let room = Infinity;
       (r.baseIds||[]).forEach(id=>{
         const b = getMealBase(id);
-        if(!b || b.ruleType==='min' || b.ruleType==='regular' || fancy.includes(id)) return;
+        if(!b || b.ruleType==='min' || b.ruleType==='regular' || fancyNoCap.includes(id)) return;
         const cap = scaledTarget(b.weeklyTarget);
         if(cap>0) room = Math.min(room, cap-(baseUsedCount[id]||0));
       });
@@ -1646,7 +2207,9 @@ function proceedGeneratePlan(overwriteAll){
     // "very busy" (or busier) is a firm preference: stick to meals tagged for busy days or
     // from the bases picked in "what are you fancying", only dipping into anything else
     // when those genuinely run out
-    const veryBusy = (wizard.busyLevel||1) >= 2;
+    const veryBusy = R.veryBusyStrict && (wizard.busyLevel||1) >= 2;
+    function isFancyRecipe(r){ return (r.baseIds||[]).some(id=>fancy.includes(id)); }
+    function slotOk(r, meal){ return !R.slotPrefs || recipeSlotOk(r, meal); }
     function isBusyPreferred(r){
       return (r.typeIds||[]).some(id=>{ const t=getMealType(id); return t && t.busyDay; })
         || (r.baseIds||[]).some(id=>fancy.includes(id));
@@ -1657,12 +2220,9 @@ function proceedGeneratePlan(overwriteAll){
       (r.typeIds||[]).forEach(id=>{
         const t = getMealType(id);
         if(!t) return;
-        if(t.busyDay){
-          w *= isBusySlot ? 10 : 3;
-          w *= (wizard.busyLevel||1); // overall "how busy is this stretch" override
-        }
         const effectiveMin = scaledTarget(t.weeklyMin);
-        if(effectiveMin>0){
+        // in a very busy week only the top-choice busy types keep their weekly-minimum push
+        if(R.typeMinimums && effectiveMin>0 && !(veryBusy && typeBusyTier(t)<2)){
           const usedCount = typeUsedCount[id]||0;
           if(usedCount < effectiveMin) w *= (1 + (effectiveMin-usedCount)*1.5); // nudge toward the floor
           else w *= Math.pow(0.7, usedCount-effectiveMin); // taper off once met
@@ -1673,8 +2233,9 @@ function proceedGeneratePlan(overwriteAll){
         if(!b) return;
         // a base picked in "what are you fancying" gets no tapering, caps or per-use decay —
         // the explicit ask for more of it wins over the usual limits for this plan
-        if(fancy.includes(id)) return;
+        if(fancyNoCap.includes(id)) return;
         const usedCount = baseUsedCount[id]||0;
+        if(b.ruleType==='min' && !R.minBases) return;
         if(b.ruleType==='min' && !skipMinIds.includes(id)){
           // the hard reservation pass above already tries to guarantee this target outright;
           // this nudge just helps the general fill lean the same way for any slots it left
@@ -1685,19 +2246,39 @@ function proceedGeneratePlan(overwriteAll){
             else w *= Math.pow(0.7, usedCount-effectiveTarget);
           }
         } else if(b.ruleType==='regular'){
+          if(!R.regularBoost) return;
           const gapWeeks = regularBaseLastGap[id];
-          const reminderAt = b.weeklyTarget>0 ? b.weeklyTarget : 2;
+          const reminderAt = Math.max(1, b.weeklyTarget||2);
           if(gapWeeks===Infinity) w *= 4; // never used yet — give it a real chance
           else if(gapWeeks>=reminderAt) w *= (1 + (gapWeeks-reminderAt+1)*1.2);
           if(usedThisRun.has(r.id) || baseUsedCount[id]) w *= Math.pow(0.6, usedCount); // still avoid overdoing it once picked
         } else {
           // 'upto' (default): a soft cap, never forbidden if nothing else is available
           const effectiveCap = scaledTarget(b.weeklyTarget);
-          if(effectiveCap>0 && usedCount>=effectiveCap) w *= 0.15;
+          if(R.upToCap && effectiveCap>0 && usedCount>=effectiveCap) w *= 0.15;
           else w *= Math.pow(0.6, usedCount);
         }
       });
-      if(usedThisRun.has(r.id)) w *= 0.1;
+      // busy-day types: "top choice" (e.g. Mindless) leans about 3x harder than plain "yes" (e.g. Easy)
+      // busy-day types only get a lean when the week (or that day) is actually busy;
+      // a normal week just follows your type minimums
+      const tier = recipeBusyTier(r);
+      const busyWeek = (wizard.busyLevel||1) > 1;
+      if(tier && (busyWeek || isBusySlot)){
+        const lean = (isBusySlot ? 10 : 3) * (wizard.busyLevel||1);
+        w *= tier===2 ? lean : Math.max(1, lean/6);
+      }
+      // rotation: the longer a recipe has gone beyond its own "every N weeks" gap, the more
+      // likely it is to come round, so the whole library cycles through over the weeks
+      if(R.rotation){
+        const gap = r.frequencyWeeks || 1;
+        const since = r.lastUsedWeekStart && !usedThisRun.has(r.id) ? weeksBetween(r.lastUsedWeekStart, refDate) : null;
+        const overdue = since===null ? (r.lastUsedWeekStart ? 0 : 6) : Math.max(0, since - gap);
+        w *= 1 + Math.min(overdue, 10) * 0.6;
+      }
+      // soft nudge away from reuse always; the hard once-per-plan rule is the 'variety' setting.
+      // A base you're fancying is allowed to come round again, so it's barely penalised
+      if(usedThisRun.has(r.id)) w *= isFancyRecipe(r) ? 0.6 : 0.1;
       // frequency is now a hard filter before pools reach here (see freqOkAt); this
       // weight only matters in the rare relaxed-fallback case where it's re-included
       if(r.lastUsedWeekStart){
@@ -1717,7 +2298,9 @@ function proceedGeneratePlan(overwriteAll){
       for(let i=0;i<use.length;i++){ rnd -= weights[i]; if(rnd<=0) return use[i]; }
       return use[use.length-1];
     }
+    const generalPlaced = []; // slots filled by the planner (not priority items) — candidates the companion pass may adjust
     function place(slot, r){
+      generalPlaced.push({date:slot.date, meal:slot.meal});
       const day = state.days[slot.date];
       day[slot.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
       r.lastUsedWeekStart = slot.date;
@@ -1727,15 +2310,18 @@ function proceedGeneratePlan(overwriteAll){
     }
 
     let openSlots = remainingSlots.slice();
-    const basePoolAll = state.recipes.filter(r=>!r.ephemeral && !isManualOnly(r));
+    const excludeIds = wizard.excludeIds || [];
+    const basePoolAll = state.recipes.filter(r=>!r.ephemeral && !isManualOnly(r) && !excludeIds.includes(r.id));
 
     // "at least" meal bases are a hard target, not a nudge — reserve slots for them up
     // front (before multiply/general fill get a say) so the target actually gets hit
     // whenever the library has enough eligible recipes, unless the user explicitly
     // skipped this base for this one-off plan in the wizard.
     const skipMinIds = wizard.skipMinBaseIds || [];
-    state.mealBases.filter(b=>b.ruleType==='min' && !skipMinIds.includes(b.id)).forEach(b=>{
-      const target = scaledTarget(b.weeklyTarget);
+    state.mealBases.filter(b=>R.minBases && b.ruleType==='min' && !skipMinIds.includes(b.id)).forEach(b=>{
+      // anything from this base already in the week (or placed up front) counts towards the target
+      const fullTarget = scaledTarget(b.weeklyTarget);
+      const target = Math.max(0, fullTarget - (baseUsedCount[b.id]||0));
       if(!target) return;
       const eligibleRecipes = basePoolAll.filter(r=>(r.baseIds||[]).includes(b.id));
       if(!eligibleRecipes.length) return;
@@ -1745,7 +2331,7 @@ function proceedGeneratePlan(overwriteAll){
         for(const slot of openSlots){
           const candidates = eligibleRecipes.filter(r=>
             (!veryBusy || isBusyPreferred(r) || !eligibleRecipes.some(isBusyPreferred)) &&
-            seasonOkAt(r, slot.date) && freqOkAt(r, slot.date) &&
+            slotOk(r, slot.meal) && seasonOkAt(r, slot.date) && freqOkAt(r, slot.date) &&
             !hasBaseConflictOnDay(r, slot.date) && !sameRecipeAlreadyOnDay(r, slot.date) &&
             !usedThisRun.has(r.id) && !capReached(r)
           );
@@ -1774,13 +2360,16 @@ function proceedGeneratePlan(overwriteAll){
     let multiplyBudget = Math.max(2, Math.floor(openSlots.length/4));
     const multiplyPool = basePoolAll.filter(r=>r.multiply && (!veryBusy || isBusyPreferred(r)) &&
       (!fancy.length || (r.baseIds||[]).some(id=>fancy.includes(id))));
-    shuffle(multiplyPool).forEach(r=>{
+    // weighted shuffle, so the same leanings (busy-day tiers, fancying, type minimums) decide
+    // which repeat-friendly recipes get their 2-3 slots first
+    const weightedOrder = list=>list.map(r=>({r, k:Math.pow(Math.random(), 1/Math.max(1e-6, weightFor(r, startISO, false)))})).sort((a,b)=>b.k-a.k).map(x=>x.r);
+    (R.repeatPair ? weightedOrder(multiplyPool) : []).forEach(r=>{
       if(multiplyBudget<=0 || !openSlots.length || usedThisRun.has(r.id)) return;
       if(capRoom(r) < 1) return;
       if(Math.random() < 0.35) return; // don't force every multiply recipe in every single run
       // a multiply recipe must still respect its own season and frequency window —
       // if it's not eligible to start anywhere in this run, skip it entirely
-      const eligibleStartSlots = openSlots.filter(s=>seasonOkAt(r,s.date) && freqOkAt(r,s.date));
+      const eligibleStartSlots = openSlots.filter(s=>slotOk(r,s.meal) && seasonOkAt(r,s.date) && freqOkAt(r,s.date) && maxRepeatsOk(r,s.date));
       if(!eligibleStartSlots.length) return;
       const copies = Math.min(Math.random()<0.5?2:3, capRoom(r), multiplyBudget);
       // never at the cost of the same-day shared-base rule — if there's no clean slot, skip it
@@ -1790,13 +2379,13 @@ function proceedGeneratePlan(overwriteAll){
       const startIdx = openSlots.indexOf(startSlot);
       openSlots.splice(startIdx,1);
       const startDate = startSlot.date;
-      const maxDate = addDays(startDate, 2);
+      const maxDate = addDays(startDate, R.repeatWindow);
       const placements = [startSlot];
       const usedDates = new Set([startDate]);
       for(let k=1;k<copies;k++){
         // once placed, later copies only need to still be in-season/in-window at their
         // own date and within the 2-day spread of the first appearance
-        const idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && seasonOkAt(r,s.date) && !hasBaseConflictOnDay(r,s.date));
+        const idx = openSlots.findIndex(s=>!usedDates.has(s.date) && s.date<=maxDate && slotOk(r,s.meal) && seasonOkAt(r,s.date) && !hasBaseConflictOnDay(r,s.date) && maxRepeatsOk(r,s.date));
         if(idx===-1) break;
         const [s] = openSlots.splice(idx,1);
         placements.push(s);
@@ -1819,15 +2408,50 @@ function proceedGeneratePlan(overwriteAll){
         (relaxSeason || seasonOkAt(r, slot.date)) &&
         (relaxFreq || freqOkAt(r, slot.date)) &&
         (relaxConflict || !hasBaseConflictOnDay(r, slot.date)) &&
-        (relaxReuse || !usedThisRun.has(r.id)) &&
+        ((relaxReuse || !R.variety || isFancyRecipe(r)) ? maxRepeatsOk(r, slot.date) : !usedThisRun.has(r.id)) &&
         (relaxCap || !capReached(r))
       );
     }
-    openSlots.forEach(slot=>{
+    // ---- helpers for the "repeat-friendly recipes always come in 2-3" rule ----
+    function dayGap(a,b){ return Math.abs((Date.parse(a)-Date.parse(b))/86400000); }
+    // a repeat-friendly recipe never goes beyond 3 appearances inside any rolling 7 days
+    function maxRepeatsOk(r, date){
+      // repeat-friendly recipes and anything from a base you're fancying: never more than 3 in any 7 days
+      if(!((R.repeatPair && r.multiply) || isFancyRecipe(r))) return true;
+      const dates = [date];
+      Object.keys(state.days).forEach(d=>['lunch','dinner'].forEach(m=>{
+        const sl = state.days[d][m];
+        if(sl && sl.status==='planned' && sl.recipeId===r.id) dates.push(d);
+      }));
+      for(let off=-6; off<=0; off++){
+        const start = addDays(date, off), end = addDays(start, 6);
+        if(dates.filter(d=>d>=start && d<=end).length > 3) return false;
+      }
+      return true;
+    }
+    function hasCompanionNear(rid, date){
+      return Object.keys(state.days).some(d=>dayGap(d,date)<=R.repeatWindow && d!==date &&
+        ['lunch','dinner'].some(m=>{ const sl=state.days[d][m]; return sl && sl.status==='planned' && sl.recipeId===rid; }));
+    }
+    // later open slots (different days, within 6 days) a repeat-friendly recipe can also take
+    function findCompanions(r, slot){
+      const room = capRoom(r);
+      const copies = Math.min(Math.random()<0.5?2:3, room);
+      if(copies<2) return [];
+      const picked = [], usedDates = new Set([slot.date]);
+      openSlots.filter(o=>o.date!==slot.date && dayGap(o.date,slot.date)<=R.repeatWindow && slotOk(r,o.meal) && seasonOkAt(r,o.date) &&
+        !hasBaseConflictOnDay(r,o.date) && !sameRecipeAlreadyOnDay(r,o.date) && maxRepeatsOk(r,o.date))
+        .sort((x,y)=>dayGap(x.date,slot.date)-dayGap(y.date,slot.date))
+        .forEach(o=>{ if(picked.length<copies-1 && !usedDates.has(o.date)){ picked.push(o); usedDates.add(o.date); } });
+      return picked;
+    }
+    const fillSlot = (slot)=>{
       // the exact same recipe twice on the exact same day is excluded up front, relaxed
       // only if literally nothing else in the whole library is left to try
-      const dayPool = basePoolAll.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
-      const searchPool = dayPool.length ? dayPool : basePoolAll;
+      // lunch-only / dinner-only is a hard rule: never relaxed
+      const slotPool = basePoolAll.filter(r=>slotOk(r, slot.meal));
+      const dayPool = slotPool.filter(r=>!sameRecipeAlreadyOnDay(r, slot.date));
+      const searchPool = dayPool.length ? dayPool : slotPool;
       // on a very busy stretch, each tier first tries the busy-friendly meals, then
       // everything else, before moving on to relax anything further
       // very busy: only busy-friendly meals (busy-day types or picked bases) are ever
@@ -1838,15 +2462,16 @@ function proceedGeneratePlan(overwriteAll){
       search:
       for(const relaxCap of [false, true]){
         for(let outerCount=0; outerCount<=2; outerCount++){
-          for(let innerCount=0; innerCount<=2; innerCount++){
+          // for a bulk-cooking plan, repeating a meal is far better than two similar meals on
+          // one day, so reuse is relaxed on its own first, and the same-day check only after
+          for(const im of [0, 2, 1, 3]){
             for(const scope of scopes){
               const seen = new Set();
               const tierPool = [];
               for(let om=0; om<4; om++){
                 if(((om&1?1:0)+(om&2?1:0))!==outerCount) continue;
                 const relaxSeason = !!(om&1), relaxFreq = !!(om&2);
-                for(let im=0; im<4; im++){
-                  if(((im&1?1:0)+(im&2?1:0))!==innerCount) continue;
+                {
                   const relaxConflict = !!(im&1), relaxReuse = !!(im&2);
                   poolForFlags(scope, slot, relaxSeason, relaxFreq, relaxConflict, relaxReuse, relaxCap).forEach(r=>{
                     if(!seen.has(r.id)){ seen.add(r.id); tierPool.push(r); }
@@ -1860,7 +2485,22 @@ function proceedGeneratePlan(overwriteAll){
       }
       if(!pool.length) return;
       const isBusySlot = !!(wizard.busyDate && slot.date===wizard.busyDate);
-      const picked = weightedPick(pool, slot.date, isBusySlot, null);
+      let picked = weightedPick(pool, slot.date, isBusySlot, null);
+      let companions = [];
+      if(R.repeatPair && picked && picked.multiply && !hasCompanionNear(picked.id, slot.date)){
+        // a repeat-friendly recipe must come with at least one more copy inside 7 days;
+        // if it can't, try another pick (the first pick stays as a last resort)
+        const firstPick = picked, tried = new Set();
+        companions = findCompanions(picked, slot);
+        while(!companions.length){
+          tried.add(picked.id);
+          const rest = pool.filter(c=>!tried.has(c.id));
+          if(!rest.length){ picked = firstPick; break; }
+          picked = weightedPick(rest, slot.date, isBusySlot, null);
+          if(!picked.multiply || hasCompanionNear(picked.id, slot.date)) break;
+          companions = findCompanions(picked, slot);
+        }
+      }
       if(picked){
         // check what rules this pick actually breaks BEFORE placing — place() sets
         // lastUsedWeekStart to today, which would make freqOkAt look violated afterwards
@@ -1871,13 +2511,105 @@ function proceedGeneratePlan(overwriteAll){
         if(hasBaseConflictOnDay(picked, slot.date)) violated.push('sameday');
         if(capReached(picked)) violated.push('cap');
         if(veryBusy && !isBusyPreferred(picked)) violated.push('busy');
-        const busyTypeIds = state.mealTypes.filter(t=>t.busyDay).map(t=>t.id);
+        const busyTypeIds = state.mealTypes.filter(t=>typeBusyTier(t)>0).map(t=>t.id);
         place(slot, picked);
+        companions.forEach(cs=>{ const ci=openSlots.indexOf(cs); if(ci>-1){ openSlots.splice(ci,1); place(cs, picked); } });
         if(violated.length) overrides.push({date:slot.date, meal:slot.meal, recipeId:picked.id, recipeName:picked.name, baseIds:(picked.baseIds||[]).slice(), typeIds:(picked.typeIds||[]).slice(), violated, suggestTypeIds: violated.includes('busy') && violated.length===1 ? busyTypeIds : null});
+      }
+    };
+    while(openSlots.length) fillSlot(openSlots.shift());
+
+    // ---- "yes, can repeat 2-3x a week" recipes are never left standing alone ----
+    // A repeat-friendly recipe must have a second appearance within any rolling 7 days.
+    // Any copy that ended up solo (picked once by the fill, or a spread that ran out of
+    // room) gets a companion by swapping in for another planner-placed slot within 6 days;
+    // if there is genuinely no room, the solo copy is swapped for a different meal instead.
+    function planSlotsOf(rid){
+      const out = [];
+      Object.keys(state.days).forEach(d=>['lunch','dinner'].forEach(m=>{
+        const sl = state.days[d][m];
+        if(sl && sl.status==='planned' && sl.recipeId===rid) out.push({date:d, meal:m});
+      }));
+      return out;
+    }
+    function hasCompanion(rid, date, meal){
+      return planSlotsOf(rid).some(o=>!(o.date===date && o.meal===meal) && dayGap(o.date,date)<=R.repeatWindow);
+    }
+    function unplace(slot){
+      const sl = state.days[slot.date][slot.meal];
+      const old = getRecipe(sl.recipeId);
+      if(old){
+        (old.baseIds||[]).forEach(id=>{ if(baseUsedCount[id]) baseUsedCount[id]--; });
+        (old.typeIds||[]).forEach(id=>{ if(typeUsedCount[id]) typeUsedCount[id]--; });
+      }
+      state.days[slot.date][slot.meal] = emptySlot();
+      const oi = overrides.findIndex(o=>o.date===slot.date && o.meal===slot.meal);
+      if(oi>-1) overrides.splice(oi,1);
+      return old;
+    }
+    function isGeneral(slot){ return generalPlaced.some(g=>g.date===slot.date && g.meal===slot.meal); }
+    const soloFixed = new Set();
+    (R.repeatPair ? generalPlaced.slice() : []).forEach(g=>{
+      const sl = state.days[g.date][g.meal];
+      if(!sl || sl.status!=='planned') return;
+      const r = getRecipe(sl.recipeId);
+      if(!r || !r.multiply || soloFixed.has(r.id)) return;
+      if(hasCompanion(r.id, g.date, g.meal)) return;
+      soloFixed.add(r.id);
+      // donor: another planner-placed slot within 6 days that can hand its place over
+      const donors = shuffle(generalPlaced.filter(t=>{
+        if(t.date===g.date && t.meal===g.meal) return false;
+        if(dayGap(t.date,g.date)>R.repeatWindow || t.date===g.date || !slotOk(r, t.meal)) return false;
+        const ts = state.days[t.date][t.meal];
+        if(!ts || ts.status!=='planned' || ts.recipeId===r.id) return false;
+        const dr = getRecipe(ts.recipeId);
+        if(!dr) return false;
+        // never rob a repeat-friendly recipe that would be left solo, or a firm-target base
+        if(dr.multiply && planSlotsOf(dr.id).filter(o=>!(o.date===t.date&&o.meal===t.meal)).length<2 &&
+           planSlotsOf(dr.id).length<3) return false;
+        if((dr.baseIds||[]).some(id=>{ const b=getMealBase(id); return (b && b.ruleType==='min') || fancy.includes(id); })) return false;
+        return true;
+      }));
+      let done = false;
+      if(capRoom(r) >= 1){
+        for(const t of donors){
+          if(!seasonOkAt(r, t.date)) continue;
+          const keep = state.days[t.date][t.meal];
+          unplace(t);
+          if(!sameRecipeAlreadyOnDay(r, t.date) && !hasBaseConflictOnDay(r, t.date)){
+            place(t, r); done = true; break;
+          }
+          state.days[t.date][t.meal] = keep; // couldn't use it — put the original back
+          const kr = getRecipe(keep.recipeId);
+          if(kr){ (kr.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1); (kr.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1); }
+        }
+      }
+      if(done) return;
+      // no room for a companion: swap the solo copy for a meal that doesn't need one
+      const slotG = {date:g.date, meal:g.meal};
+      const repl = shuffle(basePoolAll.filter(c=>
+        c.id!==r.id && !c.multiply && !usedThisRun.has(c.id) && slotOk(c, g.meal) && seasonOkAt(c, g.date) &&
+        (!veryBusy || isBusyPreferred(c))
+      ));
+      const keep = state.days[g.date][g.meal];
+      unplace(slotG);
+      let pick = repl.find(c=>!hasBaseConflictOnDay(c, g.date) && !sameRecipeAlreadyOnDay(c, g.date) && !capReached(c));
+      // or let an existing pair of a repeat-friendly recipe become a trio here
+      if(!pick) pick = shuffle(basePoolAll.filter(c=>c.id!==r.id && c.multiply && usedThisRun.has(c.id) &&
+        slotOk(c, g.meal) && seasonOkAt(c, g.date) && (!veryBusy || isBusyPreferred(c)) &&
+        hasCompanionNear(c.id, g.date) && maxRepeatsOk(c, g.date) &&
+        !hasBaseConflictOnDay(c, g.date) && !sameRecipeAlreadyOnDay(c, g.date)))[0];
+      if(pick){ place(slotG, pick); }
+      else {
+        state.days[g.date][g.meal] = keep; // nothing better — keep it rather than leave a gap
+        (r.baseIds||[]).forEach(id=>baseUsedCount[id]=(baseUsedCount[id]||0)+1);
+        (r.typeIds||[]).forEach(id=>typeUsedCount[id]=(typeUsedCount[id]||0)+1);
       }
     });
   }
 
+  const planSig = settingsSignature();
+  days.forEach(d=>{ if(state.days[d]) state.days[d].planSig = planSig; });
   state.lastViewedWeekStart = mondayOnOrBefore(startISO);
   viewWeekStart = mondayOnOrBefore(startISO);
   // a "replace the week" re-plan wipes and refills days directly, bypassing assignSlot —
@@ -1888,10 +2620,17 @@ function proceedGeneratePlan(overwriteAll){
   closeOverlay();
   render();
 
-  const filledCount = days.reduce((n,date)=>{ const d=state.days[date]; return n+(d.lunch.status==='planned'?1:0)+(d.dinner.status==='planned'?1:0); },0);
-  toast((filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals — your recipe library may be empty for some tags` : 'Plan complete')
-    + (replacedFreezerNames.length ? ` — ${freezerReturnNote(replacedFreezerNames)}` : ''));
-  if(overrides.length || shortfalls.length) showOverridesPopup(overrides, shortfalls);
+  const filledCount = slotOrder.filter(x=>state.days[x.date] && state.days[x.date][x.meal].status==='planned').length;
+  if(wizard.quiet) return filledCount;
+  const msg = (filledCount < slotOrder.length ? `Planned ${filledCount} of ${slotOrder.length} meals` : `Planned ${filledCount} meal${filledCount===1?'':'s'}`)
+    + (replacedFreezerNames.length ? ` — ${freezerReturnNote(replacedFreezerNames, R.freezerReturn)}` : '');
+  const actions = [{label:'Undo', onClick:undoLastAction}];
+  if(overrides.length || shortfalls.length || filledCount < slotOrder.length){
+    lastPlanNotes = {overrides, shortfalls, unfilled: slotOrder.length - filledCount};
+    actions.unshift({label:'See notes', onClick:()=>showOverridesPopup(lastPlanNotes.overrides, lastPlanNotes.shortfalls, lastPlanNotes.unfilled)});
+  }
+  toast(msg, {actions, duration: 9000});
+  return filledCount;
 }
 
 // explain any rule the planner had to break to fill a slot, and offer a one-tap way
@@ -1907,9 +2646,10 @@ function overrideReasonParts(o){
     return v;
   });
 }
-function showOverridesPopup(overrides, shortfalls){
+let lastPlanNotes = null;
+function showOverridesPopup(overrides, shortfalls, unfilled){
   overrides = overrides||[]; shortfalls = shortfalls||[];
-  if(!overrides.length && !shortfalls.length) return;
+  if(!overrides.length && !shortfalls.length && !unfilled) return;
   const overrideRows = overrides.map(o=>{
     const baseLabel = (o.baseIds||[]).map(id=>{ const b=getMealBase(id); return b?b.name:null; }).filter(Boolean).join('/');
     const reasonParts = overrideReasonParts(o);
@@ -1930,8 +2670,8 @@ function showOverridesPopup(overrides, shortfalls){
     <div style="display:flex;justify-content:flex-end;margin:-6px -4px 0 0;">
       <button class="del-x" onclick="closeOverlay()" aria-label="Close" style="font-size:20px;">✕</button>
     </div>
-    <h2 style="margin-top:-8px;">A few rules had to bend</h2>
-    <p class="desc">Everything got filled, but here's what didn't go entirely to plan:</p>
+    <h2 style="margin-top:-8px;">Notes on this plan</h2>
+    <p class="desc">${unfilled ? `${unfilled} meal${unfilled===1?'':'s'} couldn't be filled — you may not have enough recipes that fit your rules. ` : ''}${overrides.length||shortfalls.length ? "Here's what didn't go entirely to plan:" : ''}</p>
     ${overrideRows}${shortfallRows}
     <div class="btnrow"><button class="btn primary" onclick="closeOverlay()">Got it</button></div>
   `);
@@ -1945,6 +2685,7 @@ function openRecipeEditorPreselect(preselect){
    OVERLAY (modal)
    ============================================================ */
 function showOverlay(html){
+  hideToast();
   document.getElementById('overlayRoot').innerHTML = `
     <div class="overlay" onclick="if(event.target===this)closeOverlay()">
       <div class="modal">${html}</div>
@@ -1952,11 +2693,89 @@ function showOverlay(html){
 }
 function closeOverlay(){ document.getElementById('overlayRoot').innerHTML=''; }
 
+/* ---- in-app dialogs (replace the browser's alert / confirm / prompt) ---- */
+let dialogHandlers = {};
+function closeDialog(){ const el = document.getElementById('dialogRoot'); if(el) el.innerHTML=''; dialogHandlers = {}; }
+function showDialog(html){
+  hideToast();
+  document.getElementById('dialogRoot').innerHTML = `
+    <div class="overlay dialog-layer" onclick="if(event.target===this)closeDialog()">
+      <div class="modal dialog">${html}</div>
+    </div>`;
+}
+function appAlert(title, msg){
+  showDialog(`<h2>${escapeHtml(title)}</h2>${msg?`<p class="desc">${escapeHtml(msg)}</p>`:''}
+    <div class="btnrow"><button class="btn primary" style="flex:1;" onclick="closeDialog()">OK</button></div>`);
+}
+function appConfirm(o, onOk){
+  dialogHandlers.ok = onOk;
+  showDialog(`<h2>${escapeHtml(o.title)}</h2>${o.msg?`<p class="desc">${escapeHtml(o.msg)}</p>`:''}
+    <div class="btnrow"><button class="btn ghost" onclick="closeDialog()">${escapeHtml(o.cancel||'Cancel')}</button>
+    <button class="btn ${o.danger?'danger':'primary'}" style="flex:1;" onclick="const f=dialogHandlers.ok;closeDialog();f&&f()">${escapeHtml(o.ok||'OK')}</button></div>`);
+}
+function appPrompt(o, onOk){
+  dialogHandlers.ok = onOk;
+  showDialog(`<h2>${escapeHtml(o.title)}</h2>${o.msg?`<p class="desc">${escapeHtml(o.msg)}</p>`:''}
+    <div class="field"><input type="text" id="dialogInput" placeholder="${escapeHtml(o.placeholder||'')}" value="${escapeHtml(o.value||'')}"
+      onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('dialogOk').click();}"></div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeDialog()">Cancel</button>
+    <button class="btn primary" id="dialogOk" style="flex:1;" onclick="const v=(document.getElementById('dialogInput')||{}).value||'';const f=dialogHandlers.ok;closeDialog();f&&f(v)">${escapeHtml(o.ok||'Add')}</button></div>`);
+  setTimeout(()=>{ const i=document.getElementById('dialogInput'); if(i && i.focus) i.focus(); }, 30);
+}
+
 /* ============================================================
    SETTINGS
    ============================================================ */
-function openSettings(){ view='settings'; render(); }
-function backHome(){ view='home'; render(); }
+function setView(v){
+  if(v==='recipes' && !openSections.has('recipesSeen')){ openSections.add('recipes'); openSections.add('recipesSeen'); }
+  view = v; render(); try{ window.scrollTo(0,0); }catch(e){}
+}
+function openSettings(){ setView('settings'); }
+function backHome(){ setView('home'); }
+
+/* ---- line icons (one consistent set, drawn with the current text colour) ---- */
+const ICON_PATHS = {
+  plan:'<rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4M7.5 13h3M13.5 13h3M7.5 16.5h3"/>',
+  book:'<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 1 6.5 18H20v3H6.5A2.5 2.5 0 0 1 4 20.5zM8 7.5h8"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  snow:'<path d="M12 2.5v19M3.8 7.25l16.4 9.5M3.8 16.75l16.4-9.5M9.5 4l2.5 2 2.5-2M9.5 20l2.5-2 2.5 2"/>',
+  alert:'<path d="M10.3 3.9 1.9 18a2 2 0 0 0 1.7 3h16.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  today:'<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3"/>',
+  cloud:'<path d="M17.5 19H7a5 5 0 1 1 1-9.9A6 6 0 0 1 19.5 11 4 4 0 0 1 17.5 19z"/><path d="m9.5 14 2 2 3.5-3.5"/>'
+};
+function icon(name, cls){ return `<svg class="ic ${cls||''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON_PATHS[name]||''}</svg>`; }
+function renderTabBar(){
+  const tab = (v, icon, label)=>`<button class="tab ${view===v?'active':''}" onclick="setView('${v}')"><span class="tab-ic">${icon}</span>${label}</button>`;
+  return `<nav class="tabbar">${tab('home',icon('plan'),'Plan')}${tab('recipes',icon('book'),'Recipes')}${tab('settings',icon('gear'),'Settings')}</nav>`;
+}
+function filterRecipeList(){
+  const q = ((document.getElementById('recipeSearch')||{}).value||'').trim().toLowerCase();
+  let shown = 0;
+  document.querySelectorAll('.settings-wrap details.cat-card').forEach(card=>{
+    const rows = card.querySelectorAll('.recipe-row');
+    if(!rows.length) return;
+    let any = false;
+    rows.forEach(row=>{ const hit = !q || row.textContent.toLowerCase().includes(q); row.style.display = hit ? '' : 'none'; if(hit){ any = true; shown++; } });
+    card.style.display = any || !q ? '' : 'none';
+    if(q && any) card.open = true;
+  });
+  const empty = document.getElementById('recipeSearchEmpty'); if(empty) empty.style.display = (q && !shown) ? '' : 'none';
+}
+function renderRecipesTab(){
+  return `
+    <div class="topbar">
+      <div class="brand">
+        <h1>Recipes</h1>
+      </div>
+    </div>
+    <div class="settings-wrap">
+      <input type="search" id="recipeSearch" class="recipe-search" placeholder="Search recipes…" oninput="filterRecipeList()">
+      <div id="recipeSearchEmpty" class="hint" style="display:none;">No recipes match.</div>
+      ${renderUntaggedSection()}
+      ${renderDuplicatesSection()}
+      ${renderRecipesSection()}
+    </div>`;
+}
 let openSections = new Set();
 function trackSectionToggle(key, isOpen){
   if(isOpen) openSections.add(key); else openSections.delete(key);
@@ -1976,10 +2795,23 @@ function buildShareUrl(){
   return `${location.origin}${location.pathname}#live=${encodeURIComponent(shareMeta.shareId)}`;
 }
 let lastSyncStatus = { state:'none', time:null, error:null }; // 'none' | 'ok' | 'error'
+// what the other person sees: same labels as your own view (base + ticked types)
+function shareableDays(){
+  const out = {};
+  Object.keys(state.days).forEach(d=>{
+    const day = state.days[d], o = {};
+    ['lunch','dinner'].forEach(m=>{
+      const s = day[m] || emptySlot(); const r = s.recipeId ? getRecipe(s.recipeId) : null;
+      o[m] = {status:s.status, recipeId:s.recipeId||null, recipeName:s.recipeName||(r?r.name:null), baseLabel: r ? (mealDisplayLabel(r)||null) : (s.baseLabel||null)};
+    });
+    out[d] = o;
+  });
+  return out;
+}
 function refreshLiveShare(){
   if(!shareMeta.active || !shareMeta.shareId || !firebaseDb) return;
   firebaseDb.collection('sharedWeeks').doc(shareMeta.shareId)
-    .set({ days: state.days, viewWeekStart: shareMeta.weekStart, updatedAt: Date.now() })
+    .set({ days: shareableDays(), viewWeekStart: shareMeta.weekStart, updatedAt: Date.now() })
     .then(()=>{ lastSyncStatus = { state:'ok', time:Date.now(), error:null }; })
     .catch((err)=>{ lastSyncStatus = { state:'error', time:Date.now(), error:(err&&err.message)||String(err) }; });
 }
@@ -1991,7 +2823,7 @@ function copyOrShow(url, msg){
   }
 }
 function shareCurrentWeek(){
-  if(!firebaseDb){ alert("Live sharing isn't available right now — check your connection and try again."); return; }
+  if(!firebaseDb){ appAlert('Sharing unavailable', "Live sharing isn't available right now — check your connection and try again."); return; }
   if(shareMeta.active){
     showShareInfo();
     return;
@@ -2116,6 +2948,7 @@ function renderLiveShareHome(){
       <div class="dayhead">
         <span class="dname">${dayName(date)}</span>
         <span class="ddate">${dayShort(date)}</span>
+        ${date===todayISO()?'<span class="today-flag">today</span>':''}
       </div>
       ${renderReadOnlyMealRow(d.lunch,'lunch')}
       ${renderReadOnlyMealRow(d.dinner,'dinner')}
@@ -2172,19 +3005,15 @@ function renderSharedMealRow(meal, slot){
 function renderSettings(){
   return `
     <div class="topbar">
-      <button class="iconbtn" onclick="backHome()" aria-label="Back">‹</button>
-      <div class="brand" style="align-items:flex-end;">
-        <span class="kicker">rules &amp; recipes</span>
-        <h1 style="font-size:22px;">Settings</h1>
+      <div class="brand">
+        <h1>Settings</h1>
       </div>
     </div>
     <div class="settings-wrap">
       ${renderCloudSyncSection()}
-      ${renderUntaggedSection()}
       ${renderMealBasesSection()}
       ${renderMealTypesSection()}
-      ${renderFreezerBankSection()}
-      ${renderRecipesSection()}
+      ${renderWizardRulesSection()}
       <div class="backup-row">
         <button class="btn small" onclick="exportData()">Export backup</button>
         <button class="btn small" onclick="document.getElementById('fileimport').click()">Import backup</button>
@@ -2248,13 +3077,19 @@ function addFreezerBankItemFromSettings(){
 function baseRuleLabel(b){
   const n = b.weeklyTarget||0;
   if(b.ruleType==='min') return `at least ${n}/14 meals`;
-  if(b.ruleType==='regular') return `remind after ${n}wk gap`;
+  if(b.ruleType==='regular') return `push after ${Math.max(1,n)} wk${Math.max(1,n)===1?'':'s'} away`;
   return `up to ${n}/14 meals`;
 }
 function renderMealBasesSection(){
   const rows = state.mealBases.map(b=>{
     const seasonChips = SEASONS.map(s=>`<button type="button" class="chip season-chip ${((b.excludedSeasons||[]).includes(s))?'active':''}" onclick="toggleBaseSeason('${b.id}','${s}')">${s}</button>`).join('');
+    const outS = (b.excludedSeasons||[]);
+    const sum = [baseRuleLabel(b), outS.length ? 'not in '+outS.join('/') : ''].filter(Boolean).join(' · ');
+    const key = 'base_'+b.id;
     return `
+    <details class="cfg-row"${openSections.has(key)?' open':''} ontoggle="trackSectionToggle('${key}',this.open)">
+    <summary><span class="cfg-name">${escapeHtml(b.name)}</span><span class="cfg-sum">${escapeHtml(sum)}</span></summary>
+    <div class="cfg-body">
     <div class="rule-row">
       <input type="text" value="${escapeHtml(b.name)}" onchange="renameMealBase('${b.id}',this.value)">
       <select onchange="setBaseRuleType('${b.id}',this.value)">
@@ -2272,13 +3107,13 @@ function renderMealBasesSection(){
         <span class="season-label">out of season:</span>
         <div class="chip-group">${seasonChips}</div>
       </div>
-    </div>`;
+    </div></div></details>`;
   }).join('');
   return `
     <details class="cat-card"${openSections.has('bases')?' open':''} ontoggle="trackSectionToggle('bases',this.open)">
       <summary><h3 class="section-title">Meal bases</h3><span class="sec-count">${state.mealBases.length}</span></summary>
       <div class="cat-body">
-        <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can use more than one. Numbers are "per 14 meals" (a standard week) and scale automatically to however many days you're actually planning, so a short 3-day plan won't be held to a full week's numbers. Choose how the number behaves: "up to" is a soft cap for variety (won't chase it if you're short on recipes); "at least" nudges toward hitting that many; "include regularly" doesn't count per plan at all — it just gives a base a boost once it's gone a while without appearing. None of these are hard rules — a slot is never left empty because of them. Mark a base "out of season" for any season and the auto-planner won't pull it then.</p>
+        <p class="section-desc">The core of the meal — pasta, rice, etc. A recipe can have more than one. Numbers are per 14 meals (a standard week) and scale to the length of the plan.<br><strong>Up to</strong>: a firm limit — once reached, no more from this base (unless it's one you picked as fancying, or nothing else is left).<br><strong>At least</strong>: slots are reserved first so the target is hit, as long as you have enough recipes.<br><strong>Include regularly</strong>: no weekly count — the base gets a push once it hasn't appeared for the number of weeks set.<br><strong>Out of season</strong>: the wizard won't use it in those seasons unless nothing else fits.<br>All of these can be switched off in Wizard settings.</p>
         ${rows || '<p class="hint">No meal bases yet.</p>'}
         <div class="add-cat-form">
           <input type="text" id="newBaseName" placeholder="e.g. Couscous">
@@ -2298,10 +3133,10 @@ function renameMealBase(id, name){
   const b = getMealBase(id); if(b){ b.name = name.trim()||b.name; saveState(); }
 }
 function setBaseRuleType(id, val){
-  const b = getMealBase(id); if(b){ b.ruleType = val; saveState(); render(); }
+  const b = getMealBase(id); if(b){ b.ruleType = val; if(val==='regular' && !(b.weeklyTarget>0)) b.weeklyTarget = 2; saveState(); render(); }
 }
 function bumpBaseTarget(id, delta){
-  const b = getMealBase(id); b.weeklyTarget = Math.max(0,(b.weeklyTarget||0)+delta);
+  const b = getMealBase(id); b.weeklyTarget = Math.max(b.ruleType==='regular' ? 1 : 0,(b.weeklyTarget||0)+delta);
   saveState(); render();
 }
 function toggleBaseSeason(id, season){
@@ -2312,33 +3147,49 @@ function toggleBaseSeason(id, season){
   saveState(); render();
 }
 function deleteMealBase(id){
-  if(!confirm('Delete this meal base? Recipes using it will just lose that tag.')) return;
-  captureUndo();
-  state.mealBases = state.mealBases.filter(b=>b.id!==id);
-  state.recipes.forEach(r=>{ r.baseIds = (r.baseIds||[]).filter(bid=>bid!==id); });
-  saveState(); render();
-  toastWithUndo('Meal base deleted');
+  appConfirm({title:'Delete this meal base?', msg:'Recipes using it just lose that tag. You can undo straight after.', ok:'Delete', danger:true}, ()=>{
+    captureUndo();
+    state.mealBases = state.mealBases.filter(b=>b.id!==id);
+    state.recipes.forEach(r=>{ r.baseIds = (r.baseIds||[]).filter(bid=>bid!==id); });
+    saveState(); render();
+    toastWithUndo('Meal base deleted');
+  });
 }
 
 /* ---- meal types ---- */
 function renderMealTypesSection(){
+  const typeSummary = t=>{
+    const bits = [];
+    if(t.weeklyMin) bits.push(`min ${t.weeklyMin}`);
+    if(t.slotPref) bits.push(t.slotPref==='lunch' ? 'lunch only' : 'dinner only');
+    const tier = typeBusyTier(t); if(tier) bits.push(tier===2 ? 'busy: top choice' : 'busy: yes');
+    if(t.manualOnly) bits.push('manual only');
+    if(t.showOnMeal) bits.push('shown');
+    return bits.join(' · ') || '—';
+  };
   const rows = state.mealTypes.map(t=>`
+    <details class="cfg-row"${openSections.has('type_'+t.id)?' open':''} ontoggle="trackSectionToggle('type_${t.id}',this.open)">
+    <summary><span class="cfg-name">${escapeHtml(t.name)}${isBuiltInType(t)?'<span class="builtin-tag">built-in</span>':''}</span><span class="cfg-sum">${escapeHtml(typeSummary(t))}</span></summary>
+    <div class="cfg-body">
     <div class="rule-row">
-      <input type="text" value="${escapeHtml(t.name)}" onchange="renameMealType('${t.id}',this.value)">
+      ${isBuiltInType(t) ? `<p class="section-desc" style="flex:1 1 100%;margin:0;">${t.name.toLowerCase()==='new' ? 'Added automatically to new recipes from the wizard, and removed once you\'ve tried them.' : 'Added automatically to meals from your freezer.'} Its name can't be changed.</p>` : `<input type="text" value="${escapeHtml(t.name)}" onchange="renameMealType('${t.id}',this.value)">`}
       <div class="target-stepper">
         <button onclick="bumpTypeMin('${t.id}',-1)">–</button>
         <span class="tval">min ${t.weeklyMin}/14 meals</span>
         <button onclick="bumpTypeMin('${t.id}',1)">+</button>
       </div>
       <select onchange="setTypeSlotPref('${t.id}',this.value)">
-        <option value="" ${!t.slotPref?'selected':''}>no slot pref</option>
-        <option value="lunch" ${t.slotPref==='lunch'?'selected':''}>prefers lunch</option>
-        <option value="dinner" ${t.slotPref==='dinner'?'selected':''}>prefers dinner</option>
+        <option value="" ${!t.slotPref?'selected':''}>lunch or dinner</option>
+        <option value="lunch" ${t.slotPref==='lunch'?'selected':''}>lunch only</option>
+        <option value="dinner" ${t.slotPref==='dinner'?'selected':''}>dinner only</option>
       </select>
-      <button class="del-x" onclick="deleteMealType('${t.id}')">✕</button>
-      <label class="busy-toggle">
-        <input type="checkbox" ${t.busyDay?'checked':''} onchange="setTypeBusyDay('${t.id}',this.checked)">
-        use for busiest-day meals
+      ${isBuiltInType(t) ? '' : `<button class="del-x" aria-label="Delete type" onclick="deleteMealType('${t.id}')">✕</button>`}
+      <label class="busy-toggle">busy days:
+        <select onchange="setTypeBusyTier('${t.id}',Number(this.value))" style="margin-left:6px;">
+          <option value="0" ${typeBusyTier(t)===0?'selected':''}>no</option>
+          <option value="1" ${typeBusyTier(t)===1?'selected':''}>yes</option>
+          <option value="2" ${typeBusyTier(t)===2?'selected':''}>top choice</option>
+        </select>
       </label>
       <label class="busy-toggle">
         <input type="checkbox" ${t.manualOnly?'checked':''} onchange="setTypeManualOnly('${t.id}',this.checked)">
@@ -2346,14 +3197,14 @@ function renderMealTypesSection(){
       </label>
       <label class="busy-toggle">
         <input type="checkbox" ${t.showOnMeal?'checked':''} onchange="setTypeShowOnMeal('${t.id}',this.checked)">
-        show under the meal when planned (replaces the meal base label)
+        show under the meal, next to its base
       </label>
-    </div>`).join('');
+    </div></div></details>`).join('');
   return `
     <details class="cat-card"${openSections.has('types')?' open':''} ontoggle="trackSectionToggle('types',this.open)">
       <summary><h3 class="section-title">Meal types</h3><span class="sec-count">${state.mealTypes.length}</span></summary>
       <div class="cat-body">
-        <p class="section-desc">Practical tags — mindless, easy, or a slot preference. The minimum is "per 14 meals" (a standard week) and scales to however many days you're planning; "prefers lunch/dinner" is just a nudge, not a hard rule. Tick "use for busiest-day meals" on your easy tag so the wizard's busy-day step knows which recipes to lean on — the wizard also lets you override the overall pace for a stretch (normal/busier/very busy), which leans on these throughout, not just one day. Tick "only on selection" for tags like a takeaway night that should never get auto-planned but still show up when you tap a meal to pick one yourself.</p>
+        <p class="section-desc">Practical tags like Mindless or Easy. <strong>Min</strong> is per 14 meals (a standard week) and scales to the length of the plan. <strong>Lunch only / dinner only</strong> is a firm rule: those meals never go in the other slot. <strong>Busy days</strong>: "top choice" types are what busy and very busy weeks lean on hardest; "yes" types are used too, but less. <strong>Only on selection</strong> keeps a type out of the wizard entirely; you can still pick those meals yourself.</p>
         ${rows || '<p class="hint">No meal types yet.</p>'}
         <div class="add-cat-form">
           <input type="text" id="newTypeName" placeholder="e.g. Freezer-friendly">
@@ -2366,7 +3217,7 @@ function addMealType(){
   const input = document.getElementById('newTypeName');
   const name = input.value.trim();
   if(!name) return;
-  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, manualOnly:false, showOnMeal:false});
+  state.mealTypes.push({id:uid(), name, weeklyMin:0, slotPref:null, busyDay:false, busyTier:0, manualOnly:false, showOnMeal:false});
   saveState(); render();
 }
 function renameMealType(id, name){
@@ -2377,24 +3228,25 @@ function bumpTypeMin(id, delta){
   saveState(); render();
 }
 function setTypeSlotPref(id, val){
-  const t = getMealType(id); if(t){ t.slotPref = val || null; saveState(); }
+  const t = getMealType(id); if(t){ t.slotPref = val || null; saveState(); render(); }
 }
 function setTypeManualOnly(id, checked){
-  const t = getMealType(id); if(t){ t.manualOnly = !!checked; saveState(); }
+  const t = getMealType(id); if(t){ t.manualOnly = !!checked; saveState(); render(); }
 }
-function setTypeBusyDay(id, checked){
-  const t = getMealType(id); if(t){ t.busyDay = !!checked; saveState(); }
+function setTypeBusyTier(id, tier){
+  const t = getMealType(id); if(t){ t.busyTier = tier; t.busyDay = tier>0; saveState(); render(); }
 }
 function setTypeShowOnMeal(id, checked){
   const t = getMealType(id); if(t){ t.showOnMeal = !!checked; saveState(); render(); }
 }
 function deleteMealType(id){
-  if(!confirm('Delete this meal type? Recipes using it will just lose that tag.')) return;
-  captureUndo();
-  state.mealTypes = state.mealTypes.filter(t=>t.id!==id);
-  state.recipes.forEach(r=>{ r.typeIds = (r.typeIds||[]).filter(tid=>tid!==id); });
-  saveState(); render();
-  toastWithUndo('Meal type deleted');
+  appConfirm({title:'Delete this meal type?', msg:'Recipes using it just lose that tag. You can undo straight after.', ok:'Delete', danger:true}, ()=>{
+    captureUndo();
+    state.mealTypes = state.mealTypes.filter(t=>t.id!==id);
+    state.recipes.forEach(r=>{ r.typeIds = (r.typeIds||[]).filter(tid=>tid!==id); });
+    saveState(); render();
+    toastWithUndo('Meal type deleted');
+  });
 }
 
 /* ---- recipes missing a meal base and/or meal type tag — these silently skip any
@@ -2414,13 +3266,13 @@ function renderUntaggedSection(){
     <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
       <div class="rinfo">
         <div class="rn">${escapeHtml(r.name)}</div>
-        <div class="rmeta" style="color:var(--coral-dark, #c0503b);">${escapeHtml(missing)}</div>
+        <div class="rmeta" style="color:var(--brick-dark);">${escapeHtml(missing)}</div>
       </div>
       <span class="chev">›</span>
     </div>`).join('');
   return `
     <details class="cat-card"${openSections.has('untagged')?' open':''} ontoggle="trackSectionToggle('untagged',this.open)">
-      <summary><h3 class="section-title">⚠️ Needs tagging</h3><span class="sec-count">${all.length}</span></summary>
+      <summary><h3 class="section-title">${icon('alert')}Needs tagging</h3><span class="sec-count">${all.length}</span></summary>
       <div class="cat-body">
         <p class="section-desc">These recipes have no meal base and/or no meal type, so season exclusions and weekly base/type minimums never apply to them (frequency still works — that's set per recipe, not by tag). Tap one to fix it.</p>
         ${rows}
@@ -2435,9 +3287,9 @@ function setRecipeGroupBy(mode){
   render();
 }
 function recipeRowHtml(r){
-  const bases = baseNames(r).join(', ') || 'no base yet';
+  const bases = baseNames(r).join(', ') || 'No base';
   const types = typeNames(r).join(', ');
-  const lastUsed = r.lastUsedWeekStart ? `last used ${dayShort(r.lastUsedWeekStart)}` : 'never used';
+  const lastUsed = r.lastUsedWeekStart ? `last had ${dayShort(r.lastUsedWeekStart)}` : 'not had yet';
   return `
     <div class="recipe-row" onclick="openRecipeEditor('${r.id}')">
       <div class="rinfo">
@@ -2464,34 +3316,24 @@ function renderRecipesSection(){
     groupsHtml = groups.map(g=>{
       const key = 'recipeGroup_'+groupBy+'_'+g.id;
       return `
-      <details class="cat-card" style="box-shadow:none;padding:6px 2px;margin-bottom:2px;border-bottom:1px solid rgba(0,0,0,.06);border-radius:0;"${openSections.has(key)?' open':''} ontoggle="trackSectionToggle('${key}',this.open)">
-        <summary><h4 class="section-title" style="font-size:14px;margin:0;">${escapeHtml(g.name)}</h4><span class="sec-count">${g.recipes.length}</span></summary>
+      <details class="cat-card" style="box-shadow:none;padding:6px 2px;margin-bottom:2px;border-bottom:1px solid var(--paper-line);border-radius:0;"${openSections.has(key)?' open':''} ontoggle="trackSectionToggle('${key}',this.open)">
+        <summary><h4 class="section-title" style="font-size:15px;margin:0;">${escapeHtml(g.name)}</h4><span class="sec-count">${g.recipes.length}</span></summary>
         <div class="cat-body">${g.recipes.map(recipeRowHtml).join('')}</div>
       </details>`;
     }).join('') || '<p class="hint">No recipes yet — add your first one.</p>';
   }
   return `
-    <details class="cat-card"${openSections.has('recipes')?' open':''} ontoggle="trackSectionToggle('recipes',this.open)">
-      <summary><h3 class="section-title">Recipes</h3><span class="sec-count">${all.length}</span></summary>
-      <div class="cat-body">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:6px;flex-wrap:wrap;">
-          <div class="field" style="margin:0;">
-            <label style="font-size:11.5px;color:var(--ink-soft);display:block;">Group by</label>
-            <select onchange="setRecipeGroupBy(this.value)">
-              <option value="base" ${groupBy==='base'?'selected':''}>Meal base</option>
-              <option value="type" ${groupBy==='type'?'selected':''}>Meal type</option>
-              <option value="none" ${groupBy==='none'?'selected':''}>None (alphabetical)</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:6px;">
-            <button class="btn small" style="background:var(--mustard);color:var(--mustard-ink);" onclick="openBulkImport()">Bulk import</button>
-            <button class="btn small" style="background:var(--sage-dark);color:#fff;" onclick="openRecipeEditor(null)">+ Add</button>
-          </div>
-        </div>
-        <p class="section-desc">Tap a recipe to edit its bases, types, and rotation. Recipes with more than one base or type show up in each of those groups.</p>
-        ${groupsHtml}
-      </div>
-    </details>`;
+    <div class="recipes-toolbar">
+      <select onchange="setRecipeGroupBy(this.value)" aria-label="Group by">
+        <option value="base" ${groupBy==='base'?'selected':''}>By base · ${all.length}</option>
+        <option value="type" ${groupBy==='type'?'selected':''}>By type · ${all.length}</option>
+        <option value="none" ${groupBy==='none'?'selected':''}>A–Z · ${all.length}</option>
+      </select>
+      <span class="spacer"></span>
+      <button class="btn secondary small" onclick="openBulkImport()">Paste a list</button>
+      <button class="btn primary small" onclick="openRecipeEditor(null)">+ Add</button>
+    </div>
+    <div class="cat-card">${groupsHtml}</div>`;
 }
 
 /* ---- bulk import: paste names, categorize each one, then save them all ---- */
@@ -2534,14 +3376,14 @@ function showBulkImportItem(){
       <div class="chip-group" id="bulkImportTypeChips">${typeChips}</div>
     </div>
     <div class="field">
-      <label>How often can it repeat across weeks?</label>
+      <label>How often</label>
       <select id="bulkImportFreq" onchange="bulkImport.queue[bulkImport.index].frequencyWeeks=parseInt(this.value,10)||1">
-        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${item.frequencyWeeks===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${item.frequencyWeeks===n?'selected':''}>${n===1?'Any week':'Every '+n+' weeks'}</option>`).join('')}
       </select>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
       <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" ${item.multiply?'checked':''} onchange="bulkImport.queue[bulkImport.index].multiply=this.checked">
-      can repeat 2-3x in the same week
+      2–3× a week (batch cook: it comes back 2–3 times within a few days)
     </label>
     <div class="btnrow">
       <button class="btn ghost" onclick="skipBulkImportItem()">Skip this one</button>
@@ -2562,18 +3404,20 @@ function toggleBulkImportType(id){
   const el = document.querySelector(`#bulkImportTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
 }
 function bulkImportNewBase(){
-  const name = prompt('New meal base name:');
-  if(!name || !name.trim()) return;
-  const b = getOrCreateMealBase(name.trim());
-  bulkImport.queue[bulkImport.index].baseIds.push(b.id);
-  showBulkImportItem();
+  appPrompt({title:'New meal base', placeholder:'e.g. Couscous'}, name=>{
+    if(!name || !name.trim()) return;
+    const b = getOrCreateMealBase(name.trim());
+    bulkImport.queue[bulkImport.index].baseIds.push(b.id);
+    showBulkImportItem();
+  });
 }
 function bulkImportNewType(){
-  const name = prompt('New meal type name:');
-  if(!name || !name.trim()) return;
-  const t = getOrCreateMealType(name.trim());
-  bulkImport.queue[bulkImport.index].typeIds.push(t.id);
-  showBulkImportItem();
+  appPrompt({title:'New meal type', placeholder:'e.g. Batch cook'}, name=>{
+    if(!name || !name.trim()) return;
+    const t = getOrCreateMealType(name.trim());
+    bulkImport.queue[bulkImport.index].typeIds.push(t.id);
+    showBulkImportItem();
+  });
 }
 function skipBulkImportItem(){
   bulkImport.queue.splice(bulkImport.index,1);
@@ -2625,19 +3469,20 @@ function openRecipeEditor(id, preselect){
       <div class="chip-group" id="editTypeChips">${typeChips}</div>
     </div>
     <div class="field">
-      <label>How often can it repeat across weeks?</label>
+      <label>How often</label>
       <select id="editRecipeFreq">
-        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(r.frequencyWeeks||1)===n?'selected':''}>${n===1?'every week is fine':'every '+n+' weeks'}</option>`).join('')}
+        ${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${(r.frequencyWeeks||1)===n?'selected':''}>${n===1?'Any week':'Every '+n+' weeks'}</option>`).join('')}
       </select>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-soft);margin-bottom:6px;">
       <input type="checkbox" style="width:18px;height:18px;accent-color:var(--brick);" id="editRecipeMultiply" ${r.multiply?'checked':''}>
-      can repeat 2-3x in the same week
+      2–3× a week (batch cook: it comes back 2–3 times within a few days)
     </label>
     <div class="btnrow">
-      ${id?`<button class="btn danger" onclick="deleteRecipeFromEditor('${id}')">Delete</button>`:`<button class="btn ghost" onclick="closeOverlay()">Cancel</button>`}
-      <button class="btn primary" onclick="saveRecipeFromEditor()">Save</button>
+      <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
+      <button class="btn primary" style="flex:1;" onclick="saveRecipeFromEditor()">Save</button>
     </div>
+    ${id?`<button class="link-danger" onclick="deleteRecipeFromEditor('${id}')">Delete this recipe</button>`:''}
   `);
 }
 function toggleEditorBase(id){
@@ -2651,18 +3496,20 @@ function toggleEditorType(id){
   const el = document.querySelector(`#editTypeChips [data-id="${id}"]`); if(el) el.classList.toggle('active');
 }
 function editorNewBase(){
-  const name = prompt('New meal base name:');
-  if(!name || !name.trim()) return;
-  const b = getOrCreateMealBase(name.trim());
-  window.__editorDraft.baseIds.push(b.id);
-  reopenRecipeEditorPreservingName();
+  appPrompt({title:'New meal base', placeholder:'e.g. Couscous'}, name=>{
+    if(!name || !name.trim()) return;
+    const b = getOrCreateMealBase(name.trim());
+    window.__editorDraft.baseIds.push(b.id);
+    reopenRecipeEditorPreservingName();
+  });
 }
 function editorNewType(){
-  const name = prompt('New meal type name:');
-  if(!name || !name.trim()) return;
-  const t = getOrCreateMealType(name.trim());
-  window.__editorDraft.typeIds.push(t.id);
-  reopenRecipeEditorPreservingName();
+  appPrompt({title:'New meal type', placeholder:'e.g. Batch cook'}, name=>{
+    if(!name || !name.trim()) return;
+    const t = getOrCreateMealType(name.trim());
+    window.__editorDraft.typeIds.push(t.id);
+    reopenRecipeEditorPreservingName();
+  });
 }
 function reopenRecipeEditorPreservingName(){
   const typedName = (document.getElementById('editRecipeName')||{}).value || '';
@@ -2676,27 +3523,30 @@ function reopenRecipeEditorPreservingName(){
 function saveRecipeFromEditor(){
   const name = document.getElementById('editRecipeName').value.trim();
   if(!name) return;
-  const freq = parseInt(document.getElementById('editRecipeFreq').value,10)||1;
-  const multiply = document.getElementById('editRecipeMultiply').checked;
-  const d = window.__editorDraft;
-  if(editingRecipeId){
-    const r = getRecipe(editingRecipeId);
-    r.name=name; r.baseIds=d.baseIds; r.typeIds=d.typeIds; r.frequencyWeeks=freq; r.multiply=multiply;
-  } else {
-    state.recipes.push({id:uid(), name, baseIds:d.baseIds, typeIds:d.typeIds, frequencyWeeks:freq, multiply, lastUsedWeekStart:null, ephemeral:false});
-  }
-  saveState();
-  closeOverlay();
-  render();
+  confirmIfDuplicateName(name, editingRecipeId, ()=>{
+    const freq = parseInt(document.getElementById('editRecipeFreq').value,10)||1;
+    const multiply = document.getElementById('editRecipeMultiply').checked;
+    const d = window.__editorDraft;
+    if(editingRecipeId){
+      const r = getRecipe(editingRecipeId);
+      r.name=name; r.baseIds=d.baseIds; r.typeIds=d.typeIds; r.frequencyWeeks=freq; r.multiply=multiply;
+    } else {
+      state.recipes.push({id:uid(), name, baseIds:d.baseIds, typeIds:d.typeIds, frequencyWeeks:freq, multiply, lastUsedWeekStart:null, ephemeral:false});
+    }
+    saveState();
+    closeOverlay();
+    render();
+  });
 }
 function deleteRecipeFromEditor(id){
-  if(!confirm('Delete this recipe?')) return;
-  captureUndo();
-  state.recipes = state.recipes.filter(r=>r.id!==id);
-  saveState();
-  closeOverlay();
-  render();
-  toastWithUndo('Recipe deleted');
+  appConfirm({title:'Delete this recipe?', msg:'You can undo straight after.', ok:'Delete', danger:true}, ()=>{
+    captureUndo();
+    state.recipes = state.recipes.filter(r=>r.id!==id);
+    saveState();
+    closeOverlay();
+    render();
+    toastWithUndo('Recipe deleted');
+  });
 }
 
 /* ============================================================
@@ -2719,18 +3569,26 @@ function importData(evt){
       const data = JSON.parse(reader.result);
       if(!data.mealBases || !data.mealTypes || !data.recipes || !data.days) throw new Error('bad file');
       state = data;
+      if(!state.freezerBank) state.freezerBank = [];
+      runDataMigrations();
       recomputeAllLastUsed(); // fix up any drift already present in the imported file
       saveState();
       toast('Backup restored');
       render();
-    }catch(e){ alert('Could not read that file.'); }
+    }catch(e){ appAlert("Couldn't restore", 'That file could not be read as a Meal Plan backup.'); }
   };
   reader.readAsText(file);
   evt.target.value = '';
 }
 
 /* ---------- init ---------- */
+function registerOfflineSupport(){
+  try{
+    if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }catch(e){}
+}
 function initApp(){
+  registerOfflineSupport();
   const hash = window.location.hash || '';
   if(hash.startsWith('#live=')){
     const shareId = decodeURIComponent(hash.slice(6));
