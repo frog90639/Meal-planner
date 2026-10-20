@@ -826,6 +826,15 @@ function getOrCreateMealType(name){
 function removeIfEphemeral(r){
   if(r.ephemeral){ state.recipes = state.recipes.filter(x=>x.id!==r.id); }
 }
+// "Add to freezer" from a meal or a recipe: puts a portion of it in the freezer bank
+function freezeMeal(name){
+  name = String(name||'').trim(); if(!name) return;
+  captureUndo();
+  addFreezerBankItem(name);
+  render();
+  const n = state.freezerBank.filter(f=>f.name.trim().toLowerCase()===name.toLowerCase()).length;
+  toastWithUndo(`Added ${name} to the freezer${n>1?` (${n} portions)`:''}`);
+}
 function addFreezerBankItem(name){
   const item = {id:uid(), name:name.trim()};
   state.freezerBank.push(item);
@@ -1377,6 +1386,7 @@ function openSlotEditor(date, meal){
       ${cur.recipeId ? `<button class="btn primary" onclick="closeOverlay();swapMeal('${date}','${meal}')">Suggest another</button>` : ''}
       <button class="btn ghost" onclick="closeOverlay();openMovePrompt('${date}','${meal}')">Move / swap day</button>
       ${curRecipe ? `<button class="btn ghost" onclick="openRecipeEditor('${curRecipe.id}')">Edit recipe</button>` : ''}
+      ${cur.fromFreezer ? '' : `<button class="btn ghost" onclick="freezeMeal(${escapeHtml(JSON.stringify(cur.recipeName || (curRecipe?curRecipe.name:'')))})">${icon('snow','ic-sm')} Add to freezer</button>`}
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'out')">Mark as out</button>
       <button class="btn ghost" onclick="assignSlot('${date}','${meal}',null,'empty')">Clear</button>
     </div>
@@ -1413,6 +1423,11 @@ function openSlotEditor(date, meal){
       <input type="text" id="qaName" placeholder="Recipe name" style="width:100%;padding:9px 10px;border-radius:8px;border:1px solid var(--paper-line);font-size:14px;margin-bottom:10px;">
       <div class="chip-group" style="margin-bottom:8px;" id="qaBaseChips">${baseChips}</div>
       <div class="chip-group" id="qaTypeChips">${typeChips}</div>
+      <div class="field" style="margin:10px 0 6px;">
+        <label>How often</label>
+        <select id="qaFreq">${[1,2,3,4,5,6,8].map(n=>`<option value="${n}" ${n===1?'selected':''}>${n===1?'Any week':'Every '+n+' weeks'}</option>`).join('')}</select>
+      </div>
+      <label class="busy-toggle"><input type="checkbox" id="qaMulti"> 2–3× a week (batch cook: also adds it to 1–2 more days nearby)</label>
       <button class="btn primary small" style="width:100%;margin-top:10px;" onclick="quickAdd('${date}','${meal}')">Add &amp; use for this meal</button>
     </div>
   `);
@@ -1478,13 +1493,44 @@ function quickAdd(date, meal){
   if(!name){ nameEl.focus(); return; }
   confirmIfDuplicateName(name, null, ()=>{
     const d = window.__qaDraft;
-    const recipe = {id:uid(), name, baseIds:[...d.baseIds], typeIds:[...d.typeIds], frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+    const freqEl = document.getElementById('qaFreq'), multiEl = document.getElementById('qaMulti');
+    const recipe = {id:uid(), name, baseIds:[...d.baseIds], typeIds:[...d.typeIds], frequencyWeeks: freqEl ? (parseInt(freqEl.value,10)||1) : 1, multiply: !!(multiEl && multiEl.checked), lastUsedWeekStart:null, ephemeral:false};
+    captureUndo(); // one undo takes back the new recipe and every copy of it
     state.recipes.push(recipe);
-    assignSlot(date, meal, recipe.id);
+    assignSlot(date, meal, recipe.id, null, true);
+    if(recipe.multiply) addRepeatCopies(recipe, date, meal);
   });
 }
-function assignSlot(date, meal, recipeId, forceStatus){
-  captureUndo();
+// put 1–2 more copies of a "2–3× a week" recipe into free meals within the repeat window
+function addRepeatCopies(r, date, meal){
+  const R = getRules();
+  if(!R.repeatPair) return;
+  const want = Math.random()<0.5 ? 1 : 2;
+  const placed = [];
+  const free = [];
+  for(let off=-R.repeatWindow; off<=R.repeatWindow; off++){
+    if(!off) continue;
+    const d = addDays(date, off);
+    if(d < todayISO()) continue;
+    ['lunch','dinner'].forEach(m=>{
+      const sl = peekDay(d)[m];
+      if(sl.status==='empty' && (!R.slotPrefs || recipeSlotOk(r, m))) free.push({d, m, off});
+    });
+  }
+  free.sort((a,b)=>Math.abs(a.off)-Math.abs(b.off) || (a.m===meal?-1:1));
+  const usedDates = new Set([date]);
+  for(const f of free){
+    if(placed.length>=want) break;
+    if(usedDates.has(f.d)) continue;
+    ensureDay(f.d)[f.m] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
+    usedDates.add(f.d); placed.push(f);
+  }
+  recomputeAllLastUsed(); saveState(); refreshLiveShare(); render();
+  if(placed.length) toastWithUndo(`Added ${r.name} — also on ${placed.map(f=>`${dayName(f.d).slice(0,3)} ${f.m}`).join(' & ')}`, 7000);
+  else toast(`Added ${r.name} — no free meals nearby for its repeats`);
+}
+function assignSlot(date, meal, recipeId, forceStatus, noUndo){
+  if(!noUndo) captureUndo();
   const day = ensureDay(date);
   const had = day[meal];
   const backToFreezer = freezerNamesIn([had]);
@@ -2043,7 +2089,7 @@ function proceedGeneratePlan(overwriteAll){
     const newType = getOrCreateMealType('New');
     newItems.forEach(item=>{
       const typeIds = Array.from(new Set([...(item.typeIds||[]), newType.id]));
-      const r = {id:uid(), name:item.name, baseIds:item.baseIds||[], typeIds, frequencyWeeks:1, multiply:false, lastUsedWeekStart:null, ephemeral:false};
+      const r = {id:uid(), name:item.name, baseIds:item.baseIds||[], typeIds, frequencyWeeks:item.frequencyWeeks||1, multiply:!!item.multiply, lastUsedWeekStart:null, ephemeral:false};
       state.recipes.push(r);
       priorityPool.push(r);
     });
@@ -2069,6 +2115,22 @@ function proceedGeneratePlan(overwriteAll){
     r.lastUsedWeekStart = slot.date;
     if(freezerBankIdByRecipeId[r.id]){
       state.freezerBank = state.freezerBank.filter(f=>f.id!==freezerBankIdByRecipeId[r.id]);
+    }
+    // a new recipe ticked "2–3× a week" goes in 2–3 times, on different days close together
+    if(r.multiply && R.repeatPair){
+      const want = (Math.random()<0.5 ? 2 : 3) - 1;
+      const gap = (a,b)=>Math.abs((Date.parse(a)-Date.parse(b))/86400000);
+      const usedDates = new Set([slot.date]);
+      for(let k=0;k<want;k++){
+        const opts = slotsLeft.filter(s=>!usedDates.has(s.date) && gap(s.date, slot.date)<=R.repeatWindow && fitsSlot(s))
+          .sort((a,b)=>(priorityDates.has(a.date)-priorityDates.has(b.date)) || gap(a.date,slot.date)-gap(b.date,slot.date));
+        if(!opts.length) break;
+        const s2 = opts[0];
+        slotsLeft.splice(slotsLeft.indexOf(s2),1);
+        usedDates.add(s2.date); priorityDates.add(s2.date);
+        state.days[s2.date][s2.meal] = {status:'planned', recipeId:r.id, recipeName:r.name, baseLabel: mealDisplayLabel(r)||null};
+        if(s2.date > r.lastUsedWeekStart) r.lastUsedWeekStart = s2.date;
+      }
     }
   }
   const priorityPlaced = priorityPool.slice(0,priorityCount);
@@ -3482,6 +3544,7 @@ function openRecipeEditor(id, preselect){
       <button class="btn ghost" onclick="closeOverlay()">Cancel</button>
       <button class="btn primary" style="flex:1;" onclick="saveRecipeFromEditor()">Save</button>
     </div>
+    ${id?`<button class="btn secondary" style="width:100%;margin-top:10px;" onclick="freezeMeal(${escapeHtml(JSON.stringify(r.name))})">${icon('snow','ic-sm')} Add a portion to the freezer</button>`:''}
     ${id?`<button class="link-danger" onclick="deleteRecipeFromEditor('${id}')">Delete this recipe</button>`:''}
   `);
 }
