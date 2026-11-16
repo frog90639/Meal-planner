@@ -604,9 +604,31 @@ function cloudDocRef(uidVal){ return firebaseDb.collection('users').doc(uidVal);
 function signInWithGoogle(){
   if(!firebaseAuth){ appAlert('Sign-in unavailable', "Sign-in isn't available right now — check your connection and try again."); return; }
   const provider = new firebase.auth.GoogleAuthProvider();
-  firebaseAuth.signInWithRedirect(provider).catch(e=>{
+  provider.setCustomParameters({ prompt:'select_account' });
+  // A pop-up is used rather than a full-page redirect: Safari (and now Chrome) block the
+  // cross-site storage the redirect method relies on when the app isn't on firebaseapp.com,
+  // which made sign-in silently bounce back to the app signed out.
+  firebaseAuth.signInWithPopup(provider).then(res=>{
+    if(res && res.user) toast(`Signed in as ${res.user.email || 'your Google account'}`);
+  }).catch(e=>{
+    const code = (e && e.code) || '';
     console.error('Google sign-in failed', e);
-    appAlert("Couldn't start Google sign-in", ((e&&e.message)||'unknown error')+" — this usually means Google sign-in isn't enabled yet in the Firebase console (Authentication → Sign-in method), or this site isn't listed under Authentication → Settings → Authorized domains.");
+    if(code==='auth/popup-closed-by-user' || code==='auth/cancelled-popup-request' || code==='auth/user-cancelled') return;
+    if(code==='auth/popup-blocked' || code==='auth/operation-not-supported-in-this-environment'){
+      // last resort for browsers that won't open the pop-up
+      try{ sessionStorage.setItem('mealPlan.redirectSignIn','1'); }catch(_){}
+      firebaseAuth.signInWithRedirect(provider).catch(err=>appAlert("Couldn't start Google sign-in", (err&&err.message)||'unknown error'));
+      return;
+    }
+    if(code==='auth/unauthorized-domain'){
+      appAlert("This site isn't allowed to sign in yet", `In the Firebase console, go to Authentication → Settings → Authorized domains and add ${location.hostname}.`);
+      return;
+    }
+    if(code==='auth/network-request-failed'){
+      appAlert("Couldn't reach Google", 'Check your connection and try again.');
+      return;
+    }
+    appAlert("Google sign-in didn't work", ((e&&e.message)||'unknown error') + (code ? ` (${code})` : ''));
   });
 }
 function signOutOfGoogle(){
@@ -677,7 +699,14 @@ function resolveCloudConflict(choice){
   window.__pendingCloudState = null;
 }
 if(firebaseAuth){
-  firebaseAuth.getRedirectResult().catch(e=>{
+  firebaseAuth.getRedirectResult().then(res=>{
+    let tried = false;
+    try{ tried = sessionStorage.getItem('mealPlan.redirectSignIn')==='1'; sessionStorage.removeItem('mealPlan.redirectSignIn'); }catch(_){}
+    if(tried && !(res && res.user)){
+      // came back from Google but the browser dropped the sign-in on the way
+      setTimeout(()=>{ if(!currentUser) appAlert("Sign-in didn't stick", "Your browser blocked the sign-in on its way back from Google. Try again, and if a pop-up is blocked, allow pop-ups for this site (iPhone: Settings → Safari → turn off Block Pop-ups)."); }, 1500);
+    }
+  }).catch(e=>{
     console.error('Google sign-in failed', e);
     appAlert("Google sign-in didn't complete", (e&&e.message)||'unknown error');
   });
